@@ -1,0 +1,3203 @@
+<!doctype html>
+<html lang="en" data-lesson="lesson2" data-teacher="1">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 2: Downhill (solutions)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #f6f8fc;
+  --card: #ffffff;
+  --ink: #18213a;
+  --muted: #5b6680;
+  --grid: #dfe5ef;
+  --line: #c6cfde;
+  --accent: #3f3bd9;
+  --accent-soft: #e9e8fd;
+  --marker: #f5c518;
+  --marker-soft: #fff4c2;
+  --red: #d9363e;
+  --green: #1d9467;
+  --code-bg: #151b2d;
+  --code-ink: #e3e8f5;
+  --out-bg: #0e1322;
+  --radius: 10px;
+  --font: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 17px;
+  line-height: 1.5;
+}
+a { color: var(--accent); }
+.page { max-width: 1040px; margin: 0 auto; padding: 0 20px 96px; }
+
+/* Header */
+.lesson-head {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
+  padding: 32px 0 18px; border-bottom: 3px solid var(--ink); flex-wrap: wrap;
+}
+.lesson-head .titles { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
+.lesson-num {
+  font-size: 3.4rem; line-height: 0.9; font-weight: 700; color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.lesson-head h1 { margin: 0; font-size: 2rem; line-height: 1.1; letter-spacing: -0.01em; }
+.lesson-head .home { font-size: 0.95rem; color: var(--muted); text-decoration: none; display: block; margin-bottom: 4px; }
+.lesson-head .home:hover { color: var(--accent); }
+
+.py-status {
+  display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem;
+  padding: 6px 12px; border-radius: 999px; background: var(--card); border: 1px solid var(--line);
+  white-space: nowrap;
+}
+.py-status::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--marker); }
+.py-status[data-state="ready"]::before { background: var(--green); }
+.py-status[data-state="error"]::before { background: var(--red); }
+.py-status[data-state="loading"]::before { animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.25; } }
+
+/* Activities */
+.activity { margin-top: 44px; counter-increment: activity; }
+.activity > h2 {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 1.35rem; margin: 0 0 6px; line-height: 1.25;
+}
+.activity > h2::before {
+  content: counter(activity);
+  flex: none; display: inline-grid; place-items: center;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--ink); color: #fff; font-size: 1rem;
+}
+.activity.extra > h2::before { content: "+"; background: var(--accent); }
+body { counter-reset: activity; }
+.task { margin: 0 0 12px 44px; color: var(--muted); max-width: 72ch; }
+.task b { color: var(--ink); font-weight: 700; }
+.activity > :not(h2):not(.task) { margin-left: 44px; }
+@media (max-width: 700px) {
+  .activity > :not(h2):not(.task), .task { margin-left: 0; }
+}
+
+.panel {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px; margin-bottom: 14px;
+}
+.split { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; align-items: start; }
+.split.wide-side { grid-template-columns: minmax(0, 1fr) 320px; }
+@media (max-width: 820px) { .split, .split.wide-side { grid-template-columns: 1fr; } }
+
+canvas.plot { width: 100%; display: block; touch-action: none; border-radius: 6px; }
+
+/* Readouts and controls */
+.readouts { display: grid; gap: 10px; }
+.readout { border: 1px solid var(--grid); border-radius: 8px; padding: 8px 12px; }
+.readout .k { font-size: 0.85rem; color: var(--muted); }
+.readout .v { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.readout.score { background: var(--marker-soft); border-color: var(--marker); }
+.readout.good { background: #e3f6ee; border-color: var(--green); }
+.readout.bad { background: #fde8e9; border-color: var(--red); }
+
+.controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin-top: 12px; }
+.control { display: grid; gap: 2px; min-width: 150px; }
+.control label, .control .lbl { font-size: 0.85rem; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+.control output { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+select, input[type="number"], input[type="text"] {
+  font: inherit; font-size: 0.95rem; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px;
+  background: #fff; color: var(--ink);
+}
+input[type="number"] { width: 84px; font-variant-numeric: tabular-nums; }
+
+.btn {
+  font: inherit; font-size: 0.95rem; font-weight: 700; cursor: pointer;
+  padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line);
+  background: #fff; color: var(--ink);
+}
+.btn:hover { border-color: var(--ink); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { background: #2f2bc0; }
+.btn.small { padding: 4px 10px; font-size: 0.85rem; }
+.btn:disabled { opacity: 0.5; cursor: default; }
+:focus-visible { outline: 3px solid var(--marker); outline-offset: 2px; }
+
+.toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 0.95rem; cursor: pointer; }
+.toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+.note { font-size: 0.9rem; color: var(--muted); margin: 8px 0 0; }
+.flash { font-weight: 700; color: var(--green); }
+
+/* Tables */
+table.data { border-collapse: collapse; font-variant-numeric: tabular-nums; width: 100%; }
+table.data th, table.data td { padding: 5px 8px; border-bottom: 1px solid var(--grid); text-align: left; }
+table.data th { font-size: 0.85rem; color: var(--muted); font-weight: 400; }
+table.data td.ok { color: var(--green); font-weight: 700; }
+table.data td.no { color: var(--red); font-weight: 700; }
+
+/* Code cells */
+.cell { background: var(--code-bg); border-radius: var(--radius); margin: 0 0 16px; overflow: hidden; border: 1px solid #0b0f1c; }
+.cell-bar {
+  display: flex; align-items: center; gap: 8px; padding: 7px 8px 7px 14px;
+  background: #1d2440; color: #aab3cc; font-size: 0.85rem;
+}
+.cell-bar .cell-title { flex: 1; color: #e3e8f5; font-weight: 700; font-size: 0.92rem; }
+.cell-bar .hint { font-size: 0.78rem; color: #7f89a6; }
+.cell-bar .btn { background: transparent; color: #c9d1e8; border-color: #3a4366; padding: 4px 10px; font-size: 0.85rem; }
+.cell-bar .btn:hover { border-color: #c9d1e8; }
+.cell-bar .btn.run { background: var(--marker); color: #18213a; border-color: var(--marker); }
+.cell-bar .btn.run:hover { background: #ffd84a; }
+.cell.running .cell-bar .btn.run { opacity: 0.6; }
+.cell.running .cell-bar { background: #2a2f63; }
+
+.editor { display: flex; font-family: var(--mono); font-size: 14px; line-height: 1.55; }
+.editor .gutter {
+  flex: none; min-width: 2.9em; padding: 12px 10px 12px 6px; text-align: right;
+  color: #59638a; background: #121828; border-right: 1px solid #262d47;
+  white-space: pre; user-select: none; font: inherit; line-height: inherit;
+}
+.editor .code-scroll { flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; }
+.editor .code-inner { position: relative; width: max-content; min-width: 100%; }
+.editor pre, .editor textarea {
+  margin: 0; padding: 12px 16px; border: 0;
+  font: inherit; line-height: inherit; letter-spacing: 0;
+  white-space: pre; overflow-wrap: normal; word-break: normal;
+  tab-size: 4; -moz-tab-size: 4;
+}
+.editor pre { color: var(--code-ink); min-height: 2.6em; pointer-events: none; }
+.editor textarea {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  background: transparent; color: transparent; caret-color: #fff;
+  resize: none; overflow: hidden; outline: none;
+}
+.editor textarea::selection { background: rgba(120, 140, 255, 0.35); color: transparent; }
+.editor:focus-within .gutter { box-shadow: inset -3px 0 0 var(--marker); }
+.t-kw { color: #c792ea; }
+.t-bi { color: #82aaff; }
+.t-fn { color: #7fdbca; }
+.t-str { color: #c3e88d; }
+.t-num { color: #f78c6c; }
+.t-com { color: #7a85a3; font-style: italic; }
+
+.out {
+  margin: 0; padding: 10px 16px; background: var(--out-bg); color: #d7deef;
+  font-family: var(--mono); font-size: 13.5px; line-height: 1.5;
+  white-space: pre-wrap; overflow-wrap: anywhere; max-height: 340px; overflow: auto;
+  border-top: 1px solid #262d47;
+}
+.out:empty { display: none; }
+.out .err { color: #ff9b9b; }
+.out .err-help { display: block; margin-top: 6px; color: #ffd27a; font-family: var(--font); font-size: 0.95rem; }
+.out .info { color: #8f9abb; }
+
+/* Task checklist under a cell */
+.checks { list-style: none; margin: 0; padding: 8px 14px 10px; background: #f1f3fb; border-top: 1px solid #0b0f1c; display: grid; gap: 5px; }
+.checks li { display: grid; grid-template-columns: 22px 1fr; gap: 2px 8px; align-items: start; font-size: 0.95rem; color: var(--ink); }
+.checks .mark {
+  width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line); background: #fff;
+  display: inline-grid; place-items: center; font-size: 0.8rem; font-weight: 700; margin-top: 2px;
+}
+.checks li.done .mark { background: var(--green); border-color: var(--green); color: #fff; }
+.checks li.done .label { color: var(--muted); }
+.checks .check-hint { grid-column: 2; font-size: 0.88rem; color: #8a5a00; }
+
+/* Hints students can open */
+details.hint { margin: 0 0 14px 44px; max-width: 72ch; }
+details.hint summary { cursor: pointer; color: var(--accent); font-weight: 700; font-size: 0.95rem; width: fit-content; }
+details.hint[open] summary { margin-bottom: 6px; }
+details.hint > div { background: var(--marker-soft); border-left: 3px solid var(--marker); padding: 8px 12px; border-radius: 0 8px 8px 0; font-size: 0.95rem; }
+details.hint code, .task code, .card code { font-family: var(--mono); font-size: 0.88em; background: rgba(24, 33, 58, 0.07); padding: 1px 4px; border-radius: 4px; }
+@media (max-width: 700px) { details.hint { margin-left: 0; } }
+
+/* Header pills */
+.head-pills { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.progress-pill {
+  font-size: 0.9rem; padding: 6px 12px; border-radius: 999px; background: var(--ink); color: #fff;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.progress-pill[data-complete="yes"] { background: var(--green); }
+
+/* Key words */
+.keywords { margin: 18px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px 18px; }
+.keywords div { border-left: 3px solid var(--accent); padding: 2px 0 2px 10px; }
+.keywords dt { font-weight: 700; }
+.keywords dd { margin: 0; color: var(--muted); font-size: 0.9rem; line-height: 1.35; }
+
+/* Quiz */
+.quiz { display: grid; gap: 14px; }
+.quiz-q { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px 14px 56px; }
+.quiz-q > p:first-of-type { margin: 0 0 10px; font-weight: 700; }
+.quiz-num { position: absolute; left: 16px; top: 14px; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-weight: 700; }
+.quiz-opts { display: grid; gap: 6px; }
+.quiz-opt { font: inherit; text-align: left; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); cursor: pointer; }
+.quiz-opt:hover:not(:disabled) { border-color: var(--accent); }
+.quiz-opt.right { background: #e3f6ee; border-color: var(--green); font-weight: 700; }
+.quiz-opt.wrong { background: #fde8e9; border-color: var(--red); text-decoration: line-through; color: var(--muted); }
+.quiz-opt:disabled { cursor: default; }
+.quiz-q .why { margin: 10px 0 0; padding: 8px 12px; background: #e3f6ee; border-radius: 8px; font-size: 0.95rem; }
+
+/* Teacher mode */
+.teacher-bar {
+  position: sticky; top: 0; z-index: 10; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  padding: 8px 20px; background: var(--marker); color: var(--ink); font-size: 0.95rem;
+}
+.teacher-bar span { flex: 1; }
+.cell-bar .btn.solution { border-color: var(--marker); color: var(--marker); }
+
+.footer-tools { margin-top: 8px; }
+.linkish { font: inherit; font-size: 0.8rem; background: none; border: 0; padding: 0; color: var(--muted); text-decoration: underline; cursor: pointer; }
+
+/* Cards */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+.card h3 { margin: 0 0 6px; font-size: 1.1rem; }
+.card p { margin: 0 0 10px; }
+.card .q { border-top: 1px solid var(--grid); padding-top: 8px; font-size: 0.95rem; color: var(--muted); }
+
+footer.credits { margin-top: 64px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 0.8rem; color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before { animation: none !important; transition: none !important; }
+}
+.activity.extra { counter-increment: none; }
+
+.cell-note { margin: 0; padding: 8px 12px; font-size: 0.9rem; background: var(--marker-soft); border-top: 1px solid var(--line); color: var(--ink); }
+.cell-note .linkish { margin-left: 4px; font-size: 0.9rem; color: var(--accent); font-weight: 700; }
+
+</style>
+</head>
+<body>
+<div class="page">
+<header class="lesson-head">
+  <div>
+    <a class="home" href="../">How Machines Learn</a>
+    <div class="titles"><span class="lesson-num">2</span><h1>Downhill</h1></div>
+  </div>
+  <span class="py-status" data-state="loading" role="status">Loading Python…</span>
+</header>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500..800;1,9..144,500..800&display=swap");
+/* Lesson 2 has its own look, an expedition field guide: warm sand paper,
+   sea-blue accent, amber trail markers, map contour lines, a serif display
+   face (Fraunces) and mono "map labels". */
+:root {
+  --paper: #f6f0e4;
+  --card: #fffdf8;
+  --ink: #102a32;
+  --muted: #5d6563;
+  --grid: #e5dac6;
+  --line: #d6c7ad;
+  --accent: #0b6e8f;
+  --accent-soft: #dcedf2;
+  --marker: #e8962e;
+  --marker-soft: #fbe6c8;
+  --code-bg: #10262d;
+  --out-bg: #0b1d23;
+  --plot-grid: #efe6d6;
+  --plot-axis: #a8987c;
+  --display: "Fraunces", Georgia, "Times New Roman", serif;
+  --trail: #c8b088;
+}
+.lesson-head {
+  border-bottom: 4px solid var(--accent);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='520' height='160' viewBox='0 0 520 160'%3E%3Cg fill='none' stroke='%230b6e8f' stroke-opacity='0.16' stroke-width='1.5'%3E%3Cpath d='M0 120 C80 90 140 140 220 110 S360 60 520 100'/%3E%3Cpath d='M0 95 C90 65 150 115 230 85 S370 35 520 75'/%3E%3Cpath d='M0 70 C100 40 160 90 240 60 S380 10 520 50'/%3E%3Cpath d='M0 45 C110 15 170 65 250 35 S390 -15 520 25'/%3E%3Cpath d='M0 145 C70 115 130 165 210 135 S350 85 520 125'/%3E%3C/g%3E%3C/svg%3E") right bottom / 520px 160px no-repeat;
+}
+.lesson-head h1, .activity > h2, .quiz h3 { font-family: var(--display); letter-spacing: -0.015em; }
+.lesson-num { font-family: var(--display); color: var(--marker); }
+.activity > h2::before { border-radius: 8px; background: var(--accent); }
+.activity.extra > h2::before { background: var(--marker); color: var(--ink); }
+.keywords div { border-left-color: var(--marker); }
+.btn.primary:hover { background: #085a75; border-color: #085a75; }
+.cell { border-color: #08181d; }
+.fieldnote {
+  display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 14px; align-items: start;
+  background: var(--card); border: 1px solid var(--line); border-left: 6px solid var(--marker);
+  border-radius: 10px; padding: 14px 18px; margin-top: 18px; max-width: 78ch;
+}
+.fieldnote svg { width: 56px; height: 56px; }
+.fieldnote .fn-kicker { font: 700 0.72rem/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--marker); margin: 2px 0 4px; }
+.fieldnote h3 { font-family: var(--display); font-size: 1.2rem; font-weight: 700; margin: 0 0 4px; }
+.fieldnote p { margin: 0; color: var(--muted); }
+.fieldnote p b { color: var(--ink); }
+.activity.starter { counter-increment: none; }
+.activity.starter > h2::before { content: "0"; background: var(--marker); color: var(--ink); }
+.fig-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 18px; align-items: center; }
+@media (max-width: 700px) { .fieldnote { grid-template-columns: 1fr; } .fieldnote svg { width: 44px; height: 44px; } .fig-row { grid-template-columns: 1fr; } }
+.keywords { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 22px; }
+@media (max-width: 700px) { .keywords { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.fog-best .v { font-size: 1.2rem; }
+.btn.pulse { animation: nudge 1.4s ease-in-out 2; }
+@keyframes nudge { 50% { box-shadow: 0 0 0 5px rgba(63, 59, 217, 0.25); } }
+.gd-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.gd-grid .stack { display: grid; gap: 14px; }
+.fig-title { font-size: 0.9rem; font-weight: 700; margin: 0 0 4px; }
+.land-key { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin-top: 8px; font-size: 0.85rem; color: var(--muted); }
+.land-key .ramp { display: inline-flex; align-items: center; gap: 6px; }
+.land-key .bar { width: 96px; height: 10px; border-radius: 3px; border: 1px solid var(--grid); }
+.land-key svg { vertical-align: -3px; margin-right: 4px; }
+#land-read { min-height: 1.4em; font-variant-numeric: tabular-nums; }
+@media (max-width: 760px) { .gd-grid { grid-template-columns: 1fr; } }
+.panel.read { max-width: 78ch; }
+.panel.read > p { margin: 0 0 12px; }
+.panel.read > p:last-child { margin-bottom: 0; }
+.knobs { display: grid; gap: 4px; margin: 4px 0 8px; font-variant-numeric: tabular-nums; }
+.kn-row { display: grid; grid-template-columns: 6.5em 11em minmax(0, 1fr); gap: 10px; align-items: center; font-size: 0.93rem; }
+.kn-head { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.kn-row > span:first-child { font-weight: 700; }
+.kn-row > span:last-child { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.kn-bar { flex: none; display: block; height: 12px; width: calc(var(--w) * 0.55); min-width: 4px; border-radius: 3px; background: var(--accent); }
+.kn-bar.mid { background: var(--marker); }
+.kn-bar.bad { background: #c2410c; }
+.kn-bar.off { background: repeating-linear-gradient(45deg, #c2410c 0 6px, #e8962e 6px 12px); }
+.kn-row em { color: var(--muted); font-style: normal; font-size: 0.85rem; }
+.kn-gpt { border-top: 1px dashed var(--line); padding-top: 6px; margin-top: 2px; }
+ol.watch { margin: 0; padding-left: 22px; }
+ol.watch li { margin: 4px 0; }
+@media (max-width: 640px) {
+  .kn-row { grid-template-columns: 4.6em minmax(0, 1fr); }
+  .kn-row > span:last-child { grid-column: 1 / -1; padding-bottom: 4px; }
+  .kn-head > span:last-child { display: none; }
+  .kn-bar { width: calc(var(--w) * 0.45); }
+}
+
+/* ---------- expedition field-guide styling ---------- */
+.activity > h3.sub { font-family: var(--display); font-size: 1.3rem; font-weight: 700; margin: 34px 0 6px 44px; padding-top: 14px; border-top: 1.5px dashed var(--trail); }
+@media (max-width: 700px) { .activity > h3.sub { margin-left: 0; } }
+body { background: var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='640' viewBox='0 0 640 640'%3E%3Cg fill='none' stroke='%230b6e8f' stroke-opacity='0.06' stroke-width='1.4'%3E%3Cpath d='M120 160c60-70 190-60 220 10s-40 150-130 140S60 230 120 160z'/%3E%3Cpath d='M90 150c70-100 250-90 290 10s-50 200-180 190S20 250 90 150z'/%3E%3Cpath d='M60 140c80-130 310-120 360 10s-60 250-230 240S-20 270 60 140z'/%3E%3Cpath d='M470 470c50-40 140-20 140 50s-90 90-140 70-50-90 0-120z'/%3E%3Cpath d='M440 455c70-70 210-40 205 70s-130 130-200 100-80-120-5-170z'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 640px 640px repeat; }
+.lesson-num { font-size: 4rem; font-weight: 700; line-height: 0.9; }
+.lesson-head h1 { font-size: 2.5rem; font-weight: 700; }
+.keywords dt { font-family: var(--display); font-weight: 700; font-size: 1.02rem; }
+.activity > h2 { font-size: 1.62rem; font-weight: 700; gap: 14px; }
+.activity > h2::before {
+  width: 36px; height: 36px; border-radius: 9px; font-family: var(--display); font-weight: 700; font-size: 1.15rem;
+}
+@media (min-width: 701px) {
+  .activity { position: relative; }
+  .activity::before {
+    content: ""; position: absolute; left: 17px; top: 50px; bottom: -38px;
+    border-left: 2.5px dashed var(--trail); pointer-events: none;
+  }
+  .activity:last-of-type::before { display: none; }
+}
+.panel { border-radius: 12px; box-shadow: 0 10px 24px -20px rgba(16, 42, 50, 0.55); }
+.fig-title { font: 700 0.72rem/1.3 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); }
+.readout .k { font: 700 0.68rem/1.3 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
+.readout .v { font-family: var(--mono); font-size: 1.35rem; }
+.fieldnote .fn-kicker::after { content: " \00b7  " attr(data-no); }
+details.hint summary { font: 700 0.8rem/1.4 var(--mono); letter-spacing: 0.04em; text-transform: uppercase; }
+.cell { border-color: #06171c; box-shadow: 0 14px 26px -22px rgba(6, 23, 28, 0.9); }
+.cell-bar { background: #0b252c; }
+.cell-bar .cell-title { font-family: var(--mono); font-size: 0.85rem; letter-spacing: 0.02em; color: #e8f1f2; }
+.cell.running .cell-bar { background: #0f3a45; }
+.checks { background: #f4ecdc; border-top-color: #06171c; }
+.quiz h3 { font-size: 1.3rem; }
+.knobs .kn-head, .knobs { font-family: var(--font); }
+.hf-key { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 8px; font-size: 0.85rem; color: var(--muted); }
+.hf-key i, .hf-table i { display: inline-block; width: 18px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 7px; }
+.hf-table-wrap { overflow-x: auto; margin-top: 14px; }
+.hf-table { border-collapse: collapse; width: 100%; font-size: 0.92rem; font-variant-numeric: tabular-nums; }
+.hf-table:empty { display: none; }
+.hf-table th { text-align: left; font: 700 0.68rem/1.2 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); border-bottom: 1.5px solid var(--ink); padding: 6px 8px; white-space: nowrap; }
+.hf-table td { padding: 6px 8px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+.hf-table th:nth-child(n+2), .hf-table td:nth-child(n+2) { text-align: right; }
+@media (max-width: 700px) {
+  .lesson-num { font-size: 3.2rem; }
+  .lesson-head h1 { font-size: 2rem; }
+  .activity > h2 { font-size: 1.38rem; }
+}
+</style>
+<dl class="keywords">
+  <div><dt>Slope (gradient)</dt><dd>How steep the ground is, and which way is uphill.</dd></div>
+  <div><dt>Step size (learning rate)</dt><dd>How far you move on each step.</dd></div>
+  <div><dt>Minimum</dt><dd>The lowest point: where the error score is smallest.</dd></div>
+  <div><dt>Local minimum</dt><dd>A low point that is not the lowest one.</dd></div>
+  <div><dt>Optimisation</dt><dd>Finding the numbers that give the best score.</dd></div>
+  <div><dt>Batch</dt><dd>The random handful of examples used for one step.</dd></div>
+</dl>
+
+<section class="activity starter">
+  <h2>Warm-up: a billion knobs</h2>
+  <p class="task">No code yet. Read, look at the chart, and watch a real machine learn. About 5 minutes.</p>
+  <div class="panel read">
+    <p>In Lesson 1 the computer found the best line by trying every setting of two <b>knobs</b>, the slope and the starting height: about 2,500 lines in a blink. That works for two knobs. But every extra knob multiplies the work. Say each knob has 100 settings and the computer tests a million settings every second:</p>
+    <p class="fig-title">How long to try every setting</p>
+    <div class="knobs" role="table" aria-label="Time to try every setting, by number of knobs">
+      <div class="kn-row kn-head" role="row"><span role="columnheader">Knobs</span><span role="columnheader">Settings to try</span><span role="columnheader">Time</span></div>
+      <div class="kn-row" role="row"><span role="cell">1</span><span role="cell">100</span><span role="cell"><i class="kn-bar ok" style="--w:2%"></i>instantly</span></div>
+      <div class="kn-row" role="row"><span role="cell">2</span><span role="cell">10,000</span><span role="cell"><i class="kn-bar ok" style="--w:11%"></i>0.01 seconds <em>(like Lesson 1)</em></span></div>
+      <div class="kn-row" role="row"><span role="cell">3</span><span role="cell">1 million</span><span role="cell"><i class="kn-bar ok" style="--w:20%"></i>1 second</span></div>
+      <div class="kn-row" role="row"><span role="cell">4</span><span role="cell">100 million</span><span role="cell"><i class="kn-bar ok" style="--w:29%"></i>2 minutes</span></div>
+      <div class="kn-row" role="row"><span role="cell">5</span><span role="cell">10 billion</span><span role="cell"><i class="kn-bar mid" style="--w:38%"></i>3 hours</span></div>
+      <div class="kn-row" role="row"><span role="cell">6</span><span role="cell">1 trillion</span><span role="cell"><i class="kn-bar mid" style="--w:47%"></i>12 days</span></div>
+      <div class="kn-row" role="row"><span role="cell">8</span><span role="cell">1 and 16 zeros</span><span role="cell"><i class="kn-bar bad" style="--w:64%"></i>300 years</span></div>
+      <div class="kn-row" role="row"><span role="cell">10</span><span role="cell">1 and 20 zeros</span><span role="cell"><i class="kn-bar bad" style="--w:82%"></i>3 million years</span></div>
+      <div class="kn-row" role="row"><span role="cell">12</span><span role="cell">1 and 24 zeros</span><span role="cell"><i class="kn-bar bad" style="--w:100%"></i>32 billion years: over twice the age of the universe</span></div>
+      <div class="kn-row kn-gpt" role="row"><span role="cell">175 billion</span><span role="cell">1 and 350 billion zeros</span><span role="cell"><i class="kn-bar bad off" style="--w:100%"></i>off the chart, for ever</span></div>
+    </div>
+    <p class="note">Squashed scale: each extra knob makes the time 100 times longer. The last row is GPT-3, an early version of the model behind ChatGPT.</p>
+    <p>So nobody tries everything. Instead the computer does what you would do on a mountain in thick fog: feel which way is <b>downhill</b> under your feet, take a small step, and feel again. With a billion knobs it nudges every knob at once, each a little in its own downhill direction, and repeats that millions of times. Face unlock, Google Translate and ChatGPT were all trained this way. The trick is called <b>gradient descent</b>, and it is today's lesson.</p>
+  </div>
+  <div class="panel read">
+    <p class="fig-title">Watch a machine learn (2 minutes)</p>
+    <ol class="watch">
+      <li>Open <a href="https://playground.tensorflow.org" target="_blank" rel="noopener">playground.tensorflow.org</a>, a small real neural network that runs in your browser.</li>
+      <li>Press the big <b>▶</b> button. Watch the number called <b>Test loss</b> on the right, above the picture. That is the error score: your height on the mountain. What does it do?</li>
+      <li>Change <b>Learning rate</b> (top left) to <b>3</b>, press <b>↺</b> to start again, then <b>▶</b>. What is different now? (Then put it back to 0.03.)</li>
+    </ol>
+  </div>
+  <p class="task">Keep one question in your head for the next activity: if you can't see the bottom of the mountain, how can you still get there?</p>
+</section>
+
+<section class="activity">
+  <h2>The foggy valley</h2>
+  <p class="task">You can't see the valley. You only know your <b>height</b> and the <b>slope</b> under your feet. Reach the bottom in as few steps as you can. Play two or three valleys, then ask yourself: what did you do when the slope was big, and what did you do when it was nearly 0?</p>
+  <div class="panel split">
+    <div>
+      <canvas class="plot" id="fog-plot" aria-label="Foggy valley game"></canvas>
+      <div class="controls">
+        <div class="control" style="min-width: 220px">
+          <label for="fog-step">Step size <output id="fog-step-out">1.00</output></label>
+          <input type="range" id="fog-step" min="0.05" max="3" step="0.05" value="1">
+        </div>
+        <button class="btn primary" id="fog-left" type="button">Step left</button>
+        <button class="btn primary" id="fog-right" type="button">Step right</button>
+        <button class="btn" id="fog-new" type="button">New valley</button>
+        <button class="btn" id="fog-reveal" type="button">Clear the fog</button>
+      </div>
+    </div>
+    <div class="readouts">
+      <div class="readout"><div class="k">Height</div><div class="v" id="fog-h">–</div></div>
+      <div class="readout"><div class="k">Slope</div><div class="v" id="fog-s">–</div></div>
+      <div class="readout score" id="fog-steps-box"><div class="k">Steps taken</div><div class="v" id="fog-steps">0</div></div>
+      <div class="readout fog-best"><div class="k">Your best (fewest steps)</div><div class="v" id="fog-best">–</div></div>
+      <p class="note" id="fog-msg" aria-live="polite"></p>
+    </div>
+  </div>
+</section>
+
+<section class="activity">
+  <h2>Walk downhill</h2>
+  <p class="task"><code>where_am_i(x)</code> gives the height and slope at position x. Run the walk, then make it <b>stop by itself</b> when it reaches the bottom (task 1) and find out <b>why the minus sign</b> matters (task 2). Tasks 3 and 4 dig deeper into why the rule works.</p>
+  <div class="panel">
+    <canvas class="plot" id="walk-plot" aria-label="Valley with the path your code takes"></canvas>
+    <p class="fig-title" style="margin-top: 10px">How far each step moved</p>
+    <canvas class="plot" id="steplen-plot" aria-label="Bar chart of the length of every step in the walk"></canvas>
+  </div>
+  <details class="hint"><summary>Hint for task 1</summary><div>Inside the loop, straight after <code>height, slope = where_am_i(x)</code>, add <code>if abs(slope) &lt; 0.01:</code> and, indented under it, <code>break</code>. Every step adds one point to <code>path</code>, and <code>path</code> also holds the start, so <code>steps_taken = len(path) - 1</code>.</div></details>
+  <details class="hint"><summary>Hint for task 2</summary><div><code>height, slope = where_am_i(9)</code>, then <code>wrong_way_x = 9 + 0.2 * slope</code>. Compare <code>where_am_i(wrong_way_x)[0]</code> with the height at 9.</div></details>
+  <details class="hint"><summary>Hint for tasks 3 and 4</summary><div>Task 3: loop <code>for i in range(len(path) - 1):</code> and append <code>abs(path[i + 1] - path[i])</code>. Task 4: copy the walk, change <code>0.01</code> to <code>0.0001</code> and allow more steps, for example <code>range(500)</code>.</div></details>
+<script type="text/x-python" data-cell="walk" data-title="Walk downhill">
+x = 9.0            # where you start
+step_size = 0.2    # how far to move each time (the learning rate)
+path = [x]
+
+for step in range(40):
+    height, slope = where_am_i(x)
+    x = x - step_size * slope      # a positive slope means downhill is to the left
+    path.append(x)
+
+height, slope = where_am_i(x)
+print(f"After {len(path) - 1} steps: x = {x:.3f}, height = {height:.3f}, slope = {slope:.4f}")
+await board.animate_path(path)     # watch the ball follow your path
+
+# Task 1: make the walk stop by itself as soon as abs(slope) < 0.01
+#         (use break, or a while loop). Then store the number of steps it
+#         took in steps_taken.
+# Task 2: why minus? Start again at x = 9 and take ONE step with + instead
+#         of -. Store the new position in wrong_way_x. Is the ground there
+#         higher or lower than at the start?
+
+# Dig deeper (if you finish early):
+# Task 3: make a list step_lengths: how far each step moved, ignoring + or -
+#         (the distance from each point in path to the next one).
+#         step_size never changes. So why do the steps get shorter?
+# Task 4: how much does precision cost? From x = 9 with step size 0.2,
+#         count the steps needed to reach abs(slope) < 0.0001 and store it in
+#         steps_for_tiny. 100 times more precise: how many MORE steps?
+#         Guess the answer for 0.000001 before you try it.
+</script>
+<script type="text/x-python" data-check="walk">
+_have = defined("path") and isinstance(path, list) and len(path) > 0
+_end_slope = abs(where_am_i(path[-1])[1]) if _have else 99
+if not _have:
+    _h1 = "Keep the list called path: it must hold every position you visit."
+elif _end_slope >= 0.01:
+    _h1 = f"Your walk ends where the slope is {_end_slope:.3f}. That is not the bottom yet."
+else:
+    _h1 = f"path has {len(path)} points: the loop kept going after it reached the bottom. Stop it with break."
+if _have and _end_slope < 0.01 and len(path) < 41 and not (defined("steps_taken") and steps_taken == len(path) - 1):
+    _h1 = "The walk stops at the bottom. Now store the number of steps in steps_taken: path also holds the start."
+check("Task 1: stop by itself at the bottom, and count the steps",
+      _have and _end_slope < 0.01 and len(path) < 41 and defined("steps_taken") and steps_taken == len(path) - 1, _h1)
+def _ok(f):
+    try:
+        return bool(f())
+    except Exception:
+        return False
+def _steps_for(tol):
+    _x = 9.0
+    for _n in range(5000):
+        if abs(where_am_i(_x)[1]) < tol:
+            return _n
+        _x = _x - 0.2 * where_am_i(_x)[1]
+    return None
+check("Task 2: one step the wrong way",
+      defined("wrong_way_x") and _ok(lambda: close(wrong_way_x, 9 + 0.2 * where_am_i(9)[1])),
+      "Get the slope at 9 with where_am_i(9), then wrong_way_x = 9 + 0.2 * slope.")
+check("Task 3 (deeper): the length of every step",
+      _have and defined("step_lengths") and _ok(lambda: len(step_lengths) == len(path) - 1 > 0 and all(close(a, abs(path[i + 1] - path[i]), 1e-6) for i, a in enumerate(step_lengths))),
+      "One number per step: abs(path[i + 1] - path[i]) for i from 0 to len(path) - 2.")
+check("Task 4 (deeper): steps to reach a slope below 0.0001",
+      defined("steps_for_tiny") and _ok(lambda: steps_for_tiny == _steps_for(0.0001)),
+      "Start at 9.0 with step size 0.2, stop when abs(slope) < 0.0001, and count the steps. Allow enough steps in range().")
+</script>
+<script type="text/x-python" data-solution="walk">
+x = 9.0            # where you start
+step_size = 0.2    # how far to move each time (the learning rate)
+path = [x]
+
+for step in range(40):
+    height, slope = where_am_i(x)
+    if abs(slope) < 0.01:          # flat enough: we are at the bottom
+        break
+    x = x - step_size * slope      # a positive slope means downhill is to the left
+    path.append(x)
+
+steps_taken = len(path) - 1
+height, slope = where_am_i(x)
+print(f"After {steps_taken} steps: x = {x:.3f}, height = {height:.3f}, slope = {slope:.4f}")
+await board.animate_path(path)     # watch the ball follow your path
+
+# Task 2
+height, slope = where_am_i(9)
+wrong_way_x = 9 + 0.2 * slope
+print(f"Wrong way: x = {wrong_way_x:.2f}, height {where_am_i(wrong_way_x)[0]:.1f} (started at {height:.1f})")
+# The minus sign is the whole trick: + walks UPHILL.
+
+# Task 3
+step_lengths = []
+for i in range(len(path) - 1):
+    step_lengths.append(abs(path[i + 1] - path[i]))
+print("Step lengths:", [round(d, 3) for d in step_lengths[:6]], "...")
+# Each step is step_size x slope, and the slope gets smaller near the bottom.
+
+# Task 4
+x = 9.0
+steps_for_tiny = 0
+while abs(where_am_i(x)[1]) >= 0.0001:
+    x = x - 0.2 * where_am_i(x)[1]
+    steps_for_tiny += 1
+print("Steps to reach a slope below 0.0001:", steps_for_tiny)
+# 34 steps for 0.01, 68 for 0.0001, 102 for 0.000001:
+# every 100 times more precise costs the same 34 extra steps.
+</script>
+  <aside class="fieldnote">
+    <svg viewBox="0 0 56 56" aria-hidden="true"><path d="M6 18 Q28 62 50 18" fill="none" stroke="#0b6e8f" stroke-width="3" stroke-linecap="round"/><circle cx="14" cy="26" r="5" fill="#e8962e" opacity="0.35"/><circle cx="20" cy="33" r="5" fill="#e8962e" opacity="0.6"/><circle cx="28" cy="38" r="5.5" fill="#e8962e"/></svg>
+    <div>
+      <p class="fn-kicker" data-no="No. 1">Field note</p>
+      <h3>A marble in a bowl</h3>
+      <p>Drop a marble in a bowl and it rolls to the bottom. Our walk is a very careful marble: it has <b>no speed</b>, it only looks at the slope where it stands. Real AI training often gives the walk a little speed, called <b>momentum</b> (an idea from 1964), so it can roll through small bumps instead of stopping in them.</p>
+    </div>
+  </aside>
+
+  <h3 class="sub">How big should each step be?</h3>
+  <p class="task">The <b>step size</b> (the learning rate) decides how far each step goes. Click the graph to choose a start, pick a step size and press <b>Play</b>. Find a step size that is too small, one that is just right and one that is too big.</p>
+  <div class="panel split">
+    <canvas class="plot" id="lr-plot" aria-label="Gradient descent explorer"></canvas>
+    <div>
+      <div class="control">
+        <label for="lr">Step size <output id="lr-out">0.10</output></label>
+        <input type="range" id="lr" min="-2" max="0.4" step="0.01" value="-1">
+      </div>
+      <div class="controls">
+        <button class="btn primary" id="lr-play" type="button">Play</button>
+        <label class="toggle"><input type="checkbox" id="lr-two"> Two valleys</label>
+      </div>
+      <div class="readouts" style="margin-top: 12px">
+        <div class="readout"><div class="k">Steps</div><div class="v" id="lr-steps">0</div></div>
+        <div class="readout" id="lr-result-box"><div class="k">Result</div><div class="v" id="lr-result" style="font-size: 1.05rem">Press Play</div></div>
+      </div>
+    </div>
+  </div>
+  <p class="task">Now test step sizes in code, on the same valley as your walk. Find the <b>biggest step size that still reaches the bottom</b> (task 5), then ask a harder question: is the biggest step also the <b>fastest</b> (task 6)? Task 7 digs deeper.</p>
+  <details class="hint"><summary>Hint for task 5</summary><div>1.0 works and 2.0 flies off, so the answer is in between. Try 1.2, 1.4, 1.6 … then narrow it down.</div></details>
+  <details class="hint"><summary>Hint for task 6</summary><div>Loop <code>for k in range(1, 16):</code> with <code>step_size = k / 10</code> and keep the one with the smallest <code>steps_to_bottom(step_size)</code>.</div></details>
+  <details class="hint"><summary>Hint for task 7</summary><div>One step is <code>x = 8 - step_size * 2 * (8 - 4)</code>, which is <code>8 - 8 * step_size</code>. Which step size makes that exactly 4?</div></details>
+<script type="text/x-python" data-cell="sizes" data-title="Test many step sizes">
+def steps_to_bottom(step_size, start=9.0, max_steps=500):
+    x = start
+    for n in range(1, max_steps + 1):
+        height, slope = where_am_i(x)
+        if abs(slope) < 0.001:
+            return n                      # reached the bottom
+        x = x - step_size * slope
+        if abs(x) > 1000:
+            return "flew off the mountain!"
+    return "still walking..."
+
+for step_size in [0.01, 0.05, 0.1, 0.3, 0.6, 1.0, 2.0]:
+    print(f"step size {step_size:<5} ->  {steps_to_bottom(step_size)}")
+
+# Task 5: find the biggest step size that still reaches the bottom.
+#         Add more step sizes to the list, then store your answer in biggest_ok.
+# Task 6: is the biggest step also the fastest? Try every step size from 0.1
+#         to 1.5 in steps of 0.1. Store the one that needs the FEWEST steps
+#         in fastest_step. Is it the biggest one?
+
+# Dig deeper (if you finish early):
+# Task 7: on the simple valley height = (x - 4) ** 2, the slope is 2 * (x - 4).
+#         Start at x = 8. Which step size lands EXACTLY on the bottom (x = 4)
+#         in ONE step? Store it in one_step_size. Then try that step size
+#         from a different start, such as x = 1. What happens, and why?
+#         (Isaac Newton's trick: the perfect step depends on how curved the
+#         valley is. Real AI uses this idea too, but it is expensive.)
+</script>
+<script type="text/x-python" data-check="sizes">
+try:
+    _res = steps_to_bottom(float(biggest_ok)) if defined("biggest_ok", "steps_to_bottom") else None
+except (TypeError, ValueError):
+    _res = "that is not a number."
+if not defined("biggest_ok"):
+    _hs = "Store your answer in a variable called biggest_ok."
+elif _res == "that is not a number.":
+    _hs = "biggest_ok must be a number, for example biggest_ok = 1.2 (no quotes)."
+elif not isinstance(_res, int):
+    _hs = f"steps_to_bottom({biggest_ok}) says: {_res} Try a smaller step size."
+else:
+    _hs = f"{biggest_ok} works ({_res} steps). Can you go bigger? Try values between 1.0 and 2.0."
+check("Task 5: biggest step size that still reaches the bottom",
+      isinstance(_res, int) and float(biggest_ok) >= 1.4, _hs)
+def _ok(f):
+    try:
+        return bool(f())
+    except Exception:
+        return False
+def _stb(ss):
+    _x = 9.0
+    for _n in range(1, 501):
+        _sl = where_am_i(_x)[1]
+        if abs(_sl) < 0.001:
+            return _n
+        _x = _x - ss * _sl
+        if abs(_x) > 1000:
+            return None
+    return None
+_grid = [k / 10 for k in range(1, 16)]
+_fewest = min(_stb(g) for g in _grid)
+check("Task 6: the fastest step size",
+      defined("fastest_step") and _ok(lambda: any(close(fastest_step, g, 1e-9) for g in _grid) and _stb(float(fastest_step)) == _fewest),
+      f"Try all 15 step sizes from 0.1 to 1.5. The fastest needs only {_fewest} steps.")
+check("Task 7 (deeper): the perfect single step",
+      defined("one_step_size") and _ok(lambda: close(one_step_size, 0.5, 1e-6)),
+      "After one step x = 8 - step_size * 2 * (8 - 4). Which step size makes that exactly 4?")
+</script>
+<script type="text/x-python" data-solution="sizes">
+def steps_to_bottom(step_size, start=9.0, max_steps=500):
+    x = start
+    for n in range(1, max_steps + 1):
+        height, slope = where_am_i(x)
+        if abs(slope) < 0.001:
+            return n                      # reached the bottom
+        x = x - step_size * slope
+        if abs(x) > 1000:
+            return "flew off the mountain!"
+    return "still walking..."
+
+for step_size in [0.01, 0.05, 0.1, 0.3, 0.6, 1.0, 1.2, 1.4, 1.5, 1.6, 1.8, 2.0]:
+    print(f"step size {step_size:<5} ->  {steps_to_bottom(step_size)}")
+
+biggest_ok = 1.5      # Task 5: 1.5 takes 33 steps; 1.6 zig-zags forever, 1.8 flies off
+
+# Task 6
+fastest_step, fewest = None, None
+for k in range(1, 16):
+    step_size = k / 10
+    n = steps_to_bottom(step_size)
+    if isinstance(n, int) and (fewest is None or n < fewest):
+        fastest_step, fewest = step_size, n
+print(f"Fastest: step size {fastest_step} needs {fewest} steps")
+# Not the biggest: 1.5 needs 33 steps because it zig-zags.
+
+# Task 7
+one_step_size = 0.5
+print("One step from 8:", 8 - one_step_size * 2 * (8 - 4))
+print("One step from 1:", 1 - one_step_size * 2 * (1 - 4))
+# The perfect step size is 1 / (how fast the slope changes) = 1 / 2.
+# It lands on the bottom in one step from ANY start, because this valley
+# curves the same amount everywhere.
+
+</script>
+  <aside class="fieldnote">
+    <svg viewBox="0 0 56 56" aria-hidden="true"><g fill="#0b6e8f"><ellipse cx="12" cy="44" rx="4.5" ry="7"/><ellipse cx="22" cy="34" rx="4" ry="6" opacity="0.85"/><ellipse cx="31" cy="26" rx="3.5" ry="5" opacity="0.7"/><ellipse cx="38" cy="20" rx="3" ry="4" opacity="0.55"/><ellipse cx="44" cy="15" rx="2.5" ry="3.2" opacity="0.4"/></g><circle cx="49" cy="11" r="3" fill="#e8962e"/></svg>
+    <div>
+      <p class="fn-kicker" data-no="No. 2">Field note</p>
+      <h3>How engineers choose the step size</h3>
+      <p>Just like you: they test a few step sizes on a small problem first. Then they usually <b>change it during training</b>: small careful steps at the start, bigger steps for most of the journey, and smaller and smaller steps at the end so the walk settles at the bottom instead of zig-zagging.</p>
+    </div>
+  </aside>
+</section>
+
+<section class="activity">
+  <h2>The computer fits the line by itself</h2>
+  <p class="task">In 1847 the French mathematician Augustin-Louis Cauchy was tired of the huge calculations astronomers needed for the paths of planets. His shortcut was this downhill walk. Here it walks in two directions at once, <b>m</b> and <b>c</b>, on your class data from Lesson 1. The map shows the error score for every possible line: the valley you are walking down.</p>
+  <div class="panel">
+    <div class="gd-grid">
+      <div>
+        <p class="fig-title">The error valley: every possible line</p>
+        <canvas class="plot" id="gd-land" aria-label="Map of the error score for every slope m and intercept c, with the path of the steps"></canvas>
+        <div class="land-key">
+          <span class="ramp">low error <span class="bar" id="land-bar"></span> high error</span>
+          <span><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="#fff" stroke="#18213a" stroke-width="2"/></svg>start</span>
+          <span><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="6" fill="#d9363e" stroke="#fff" stroke-width="2"/></svg>now</span>
+          <span><svg width="16" height="16" aria-hidden="true"><path d="M8 1 L10 6 L15 6 L11 9.5 L12.5 15 L8 11.5 L3.5 15 L5 9.5 L1 6 L6 6 Z" fill="#1d9467" stroke="#fff" stroke-width="1.2"/></svg>lowest possible error</span>
+        </div>
+        <p class="note" id="land-read">Point at the map to read the error score there.</p>
+      </div>
+      <div class="stack">
+        <div>
+          <p class="fig-title">Class data and the current line</p>
+          <canvas class="plot" id="gd-plot" aria-label="Class data with the line being fitted"></canvas>
+        </div>
+        <div>
+          <p class="fig-title">Error score after each step</p>
+          <canvas class="plot" id="gd-err" aria-label="Error score after each step"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <details class="hint"><summary>Hint for task 1</summary><div>Try a bigger <code>step_size</code>, such as 0.1, 0.2 or 0.3, and change <code>range(60)</code> to <code>range(30)</code>. The green dashed line on the error graph is the best possible score.</div></details>
+  <details class="hint"><summary>Hint for task 2</summary><div>Straight after <code>errors.append(error * 100)</code> add: <code>if len(errors) &gt;= 2 and errors[-2] - errors[-1] &lt; 0.01:</code> and, indented under it, <code>break</code>.</div></details>
+<script type="text/x-python" data-cell="fit" data-title="Gradient descent on the class data">
+# Measure in "decimetres above 170 cm" so the numbers stay small
+xs = [(h - 170) / 10 for h in heights]
+ys = [(s - 170) / 10 for s in spans]
+n = len(xs)
+
+m, c = 0.0, 0.0          # start with a flat line
+step_size = 0.02
+path = [(m, c)]
+errors = []
+
+for step in range(60):
+    # how wrong is the line, and which way should m and c move?
+    error, slope_m, slope_c = 0, 0, 0
+    for x, y in zip(xs, ys):
+        miss = (m * x + c) - y
+        error += miss ** 2 / n
+        slope_m += 2 * miss * x / n
+        slope_c += 2 * miss / n
+    errors.append(error * 100)             # back to cm², like Lesson 1
+    if error * 100 > 10000:
+        print("The error is exploding: the walk flew off the map!")
+        break
+
+    m = m - step_size * slope_m            # step downhill in m
+    c = c - step_size * slope_c            # and in c
+    path.append((m, c))
+    board.show_fit(path, errors)
+    await asyncio.sleep(0.05)
+
+c_cm = 170 - 170 * m + 10 * c
+print(f"Steps: {len(errors)}")
+print(f"Line: arm span = {m:.3f} x height {c_cm:+.1f}")
+print(f"Error score at the last step: {errors[-1]:.2f}")
+
+# Task 1: get within 1% of the best possible error in 30 steps or fewer.
+#         Watch the path on the map as you change step_size: what does it
+#         do when the step is too big?
+# Task 2: real training does not count steps: it stops when it stops getting
+#         better. Make the loop stop as soon as the error improves by less
+#         than 0.01 from one step to the next. How many steps did it need?
+</script>
+<script type="text/x-python" data-check="fit">
+import math as _math
+_xs = [(h - 170) / 10 for h in heights]
+_ys = [(s - 170) / 10 for s in spans]
+_n = len(_xs)
+
+def _err(mm, cc):
+    try:
+        return sum((mm * x + cc - y) ** 2 for x, y in zip(_xs, _ys)) / _n * 100
+    except OverflowError:
+        return _math.inf
+
+_mx, _my = sum(_xs) / _n, sum(_ys) / _n
+_sxx = sum((x - _mx) ** 2 for x in _xs)
+_bm = sum((x - _mx) * (y - _my) for x, y in zip(_xs, _ys)) / _sxx if _sxx else 0
+_best = _err(_bm, _my - _bm * _mx)
+
+_steps = len(errors) if defined("errors") else 0
+try:
+    _now = float(errors[-1]) if defined("errors") and len(errors) else _math.inf
+except (TypeError, ValueError):
+    _now = _math.inf
+if _steps > 30:
+    _h1 = f"You took {_steps} steps. Use 30 or fewer: change range(60)."
+else:
+    _h1 = f"Your error at the last step is {_now:.2f}. The best possible is {_best:.2f}, so get below {_best * 1.01:.2f}."
+check("Task 1: within 1% of the best error in 30 steps or fewer",
+      defined("errors") and 0 < _steps <= 30 and _now <= 1.01 * _best, _h1)
+
+_errs_ok = False
+if defined("errors") and len(errors) >= 2:
+    try:
+        _d = [float(errors[i]) - float(errors[i + 1]) for i in range(len(errors) - 1)]
+        _errs_ok = _d[-1] < 0.01 and all(d >= 0.01 for d in _d[:-1])
+    except (TypeError, ValueError):
+        _errs_ok = False
+check("Task 2: stop when it stops improving",
+      _errs_ok,
+      "Break straight after the step where the error went down by less than 0.01. Use the hint for task 2.")
+</script>
+<script type="text/x-python" data-solution="fit">
+# Measure in "decimetres above 170 cm" so the numbers stay small
+xs = [(h - 170) / 10 for h in heights]
+ys = [(s - 170) / 10 for s in spans]
+n = len(xs)
+
+m, c = 0.0, 0.0          # start with a flat line
+step_size = 0.3          # bigger steps: reaches the bottom in a few steps
+path = [(m, c)]
+errors = []
+
+for step in range(30):
+    # how wrong is the line, and which way should m and c move?
+    error, slope_m, slope_c = 0, 0, 0
+    for x, y in zip(xs, ys):
+        miss = (m * x + c) - y
+        error += miss ** 2 / n
+        slope_m += 2 * miss * x / n
+        slope_c += 2 * miss / n
+    errors.append(error * 100)             # back to cm², like Lesson 1
+    if len(errors) >= 2 and errors[-2] - errors[-1] < 0.01:
+        break                              # Task 2: no longer improving
+    if error * 100 > 10000:
+        print("The error is exploding: the walk flew off the map!")
+        break
+
+    m = m - step_size * slope_m            # step downhill in m
+    c = c - step_size * slope_c            # and in c
+    path.append((m, c))
+    board.show_fit(path, errors)
+    await asyncio.sleep(0.05)
+
+c_cm = 170 - 170 * m + 10 * c
+print(f"Steps: {len(errors)}")
+print(f"Line: arm span = {m:.3f} x height {c_cm:+.1f}")
+print(f"Error score at the last step: {errors[-1]:.2f}")
+# With a much bigger step_size, such as 1.5, the path zig-zags across the
+# valley and flies off the map.
+</script>
+
+  <p class="task"><b>Dig deeper, task 3:</b> why did the code measure in "decimetres above 170 cm"? This cell does the same walk in plain centimetres.</p>
+  <details class="hint"><summary>Hint for task 3</summary><div>Keep dividing the step size by 10: 0.001, 0.0001, 0.00001 … until it no longer flies off. Then look at <code>c</code>: the best line has c of about −5.</div></details>
+<script type="text/x-python" data-cell="raw" data-title="The same walk in centimetres">
+def walk_raw(step_size, steps=60):
+    m, c = 0.0, 0.0
+    n = len(heights)
+    for step in range(steps):
+        error, slope_m, slope_c = 0, 0, 0
+        for h, s in zip(heights, spans):
+            miss = (m * h + c) - s
+            error += miss * miss / n
+            slope_m += 2 * miss * h / n
+            slope_c += 2 * miss / n
+        if not math.isfinite(error) or error > 1e12:
+            return "flew off the map!"
+        m = m - step_size * slope_m
+        c = c - step_size * slope_c
+    return f"m = {m:.3f}, c = {c:.3f}, error score = {error:.2f}"
+
+for step_size in [0.3, 0.01, 0.001]:
+    print(f"step size {step_size:<8} ->  {walk_raw(step_size)}")
+
+# Task 3: find a step size that does NOT fly off and store it in raw_step_ok.
+#         Now look at c. The best line has c of about -5. Why does c hardly
+#         move? (Hint: compare a height, about 170, with the number 1.)
+</script>
+<script type="text/x-python" data-check="raw">
+def _raw_flies(ss):
+    _m = _c = 0.0
+    _n = len(heights)
+    for _ in range(60):
+        _e = _gm = _gc = 0
+        for _h, _s in zip(heights, spans):
+            _miss = _m * _h + _c - _s
+            _e += _miss * _miss / _n
+            _gm += 2 * _miss * _h / _n
+            _gc += 2 * _miss / _n
+        if not math.isfinite(_e) or _e > 1e12:
+            return True
+        _m, _c = _m - ss * _gm, _c - ss * _gc
+    return False
+_raw_good = False
+if defined("raw_step_ok"):
+    try:
+        _raw_good = float(raw_step_ok) > 0 and not _raw_flies(float(raw_step_ok))
+    except (TypeError, ValueError, OverflowError):
+        _raw_good = False
+check("Task 3 (deeper): a step size that works in centimetres",
+      _raw_good,
+      "Store a step size in raw_step_ok that does not fly off. Keep dividing by 10.")
+</script>
+<script type="text/x-python" data-solution="raw">
+def walk_raw(step_size, steps=60):
+    m, c = 0.0, 0.0
+    n = len(heights)
+    for step in range(steps):
+        error, slope_m, slope_c = 0, 0, 0
+        for h, s in zip(heights, spans):
+            miss = (m * h + c) - s
+            error += miss * miss / n
+            slope_m += 2 * miss * h / n
+            slope_c += 2 * miss / n
+        if not math.isfinite(error) or error > 1e12:
+            return "flew off the map!"
+        m = m - step_size * slope_m
+        c = c - step_size * slope_c
+    return f"m = {m:.3f}, c = {c:.3f}, error score = {error:.2f}"
+
+for step_size in [0.3, 0.01, 0.001, 0.0001, 0.00001]:
+    print(f"step size {step_size:<8} ->  {walk_raw(step_size)}")
+
+raw_step_ok = 0.00001
+# The slope for m is about 170 times bigger than the slope for c, because
+# every miss is multiplied by a height of about 170. A step small enough for m
+# is far too small for c, so c hardly moves. Rescaling puts m and c on the
+# same footing: this is called feature scaling, and real AI always does it.
+</script>
+</section>
+
+<section class="activity">
+  <h2>Learn from a handful at a time</h2>
+  <p class="task">In activity 3 every step looked at your whole class. A real AI learns from millions of examples: photos, sentences, games. Looking at all of them for every single step would take for ever. The trick is the one pollsters use before an election: <b>ask a random handful</b>, not everyone. Here is a made-up school of <b>10,000 people</b>. Every walk below may look at 20,000 people in total. Which one gets closest to the best line?</p>
+  <div class="panel">
+    <div class="gd-grid">
+      <div>
+        <p class="fig-title">The race: error against people looked at</p>
+        <canvas class="plot" id="hf-race" aria-label="Error score against the number of people looked at, one line per batch size"></canvas>
+        <div class="hf-key" id="hf-key"></div>
+      </div>
+      <div>
+        <p class="fig-title">The paths on the school's error map</p>
+        <canvas class="plot" id="hf-map" aria-label="Map of the error score for the whole school, with the path of each walk"></canvas>
+      </div>
+    </div>
+    <div class="hf-table-wrap"><table class="hf-table" id="hf-table" aria-live="polite"></table></div>
+  </div>
+  <details class="hint"><summary>Hint for task 1</summary><div><code>random.sample(school, batch_size)</code> picks <code>batch_size</code> different people at random. Put it where <code>school</code> is on the line marked Task 1.</div></details>
+  <details class="hint"><summary>Hint for task 2</summary><div>Start from <code>m, c, looks = 0.0, 0.0, 0</code>. Loop <code>for step in range(10_000):</code> and <code>break</code> as soon as <code>school_error(m, c) - best_error &lt; 1</code>. Otherwise pick a handful, get <code>slopes(m, c, people)</code>, add <code>len(people)</code> to <code>looks</code> and take the step with step size 0.3. Return <code>looks</code>.</div></details>
+  <details class="hint"><summary>Hint for tasks 3 and 4</summary><div>Task 3: copy <code>train</code>, count the steps in a variable <code>k</code> (0, 1, 2, …) and use <code>step = 0.3 / (1 + k / 100)</code> in place of <code>step_size</code>. Return <code>m, c</code>. Task 4: <code>300_000_000_000 / 3_200_000</code>.</div></details>
+<script type="text/x-python" data-cell="handful" data-title="One handful per step">
+# school is a list of 10,000 (x, y) pairs: height and arm span in decimetres
+# above 170 cm, like activity 3. school_error(m, c) is the error score for
+# the WHOLE school (in cm²) and best_error is the lowest possible.
+import random
+
+def slopes(m, c, people):
+    """Which way should m and c move? Measured on any list of people."""
+    slope_m, slope_c = 0, 0
+    for x, y in people:
+        miss = (m * x + c) - y
+        slope_m += 2 * miss * x / len(people)
+        slope_c += 2 * miss / len(people)
+    return slope_m, slope_c
+
+def train(batch_size, step_size=0.3, looks_allowed=20_000):
+    m, c = 0.0, 0.0
+    looks = 0                     # how many people we have looked at so far
+    path, looked = [(m, c)], [0]
+    while looks < looks_allowed:
+        people = school           # Task 1: use batch_size random people instead
+        slope_m, slope_c = slopes(m, c, people)
+        looks += len(people)
+        m = m - step_size * slope_m
+        c = c - step_size * slope_c
+        path.append((m, c))
+        looked.append(looks)
+    return path, looked
+
+runs = []
+for batch_size in [10_000, 1000, 100, 10]:
+    path, looked = train(batch_size)
+    m, c = path[-1]
+    print(f"batch {batch_size:>6}: {len(path) - 1:>5} steps, error {school_error(m, c):.2f}")
+    runs.append((batch_size, path, looked))
+print(f"best possible: {best_error:.2f}")
+board.show_handful(runs)
+
+# Task 1: a real AI can't look at everyone for every step. Change the line
+#         marked Task 1 so each step uses only batch_size random people.
+#         Run it and watch the race. Which batch size wins?
+# Task 2: write looks_needed(batch_size). Start at m = c = 0, use step size
+#         0.3 and count how many people it looks at before school_error(m, c)
+#         is within 1 of best_error. Try 10_000, 1000, 100 and 10. Then
+#         count the STEPS each one took. What do you notice?
+
+# Dig deeper (if you finish early):
+# Task 3: with batch size 10 the walk never settles down: every handful
+#         points a slightly different way. Write train_settle(batch_size)
+#         that takes 20,000 // batch_size steps but makes each step smaller
+#         as it goes: step = 0.3 / (1 + k / 100) for step number k = 0, 1, 2 …
+#         Return the final m, c. Is it closer to best_error than train?
+# Task 4: GPT-3 learned from about 300 billion tokens (pieces of words),
+#         using a handful of 3.2 million tokens for each step. How many
+#         steps is that? Store it in gpt3_steps. How many steps would the
+#         same work buy if every step used all 300 billion?
+</script>
+<script type="text/x-python" data-check="handful">
+def _ok(f):
+    try:
+        return bool(f())
+    except Exception:
+        return False
+def _t1():
+    _p1, _l1 = train(10, 0.3, 1000)
+    _p2, _l2 = train(10, 0.3, 1000)
+    return len(_p1) == 101 and _l1[-1] == 1000 and list(_p1) != list(_p2)
+_h1 = "Each step should look at batch_size people chosen at random: random.sample(school, batch_size)."
+if defined("train") and _ok(lambda: len(train(10, 0.3, 1000)[0]) == 2):
+    _h1 = "Every step still looks at all 10,000 people. Change people = school on the line marked Task 1."
+check("Task 1: one random handful per step", defined("train") and _ok(_t1), _h1)
+def _t2():
+    return looks_needed(10_000) == 40_000 and 3000 <= looks_needed(1000) <= 6000 and looks_needed(10) <= 2000
+check("Task 2: how many people does it need to look at?",
+      defined("looks_needed") and _ok(_t2),
+      "With the whole school it needs 4 steps, so looks_needed(10_000) should be 40,000. Count len(people) on every step.")
+def _final(r):
+    r = list(r)
+    if len(r) == 2 and all(isinstance(v, (int, float)) for v in r):
+        return float(r[0]), float(r[1])
+    return float(r[-1][0]), float(r[-1][1])
+def _t3():
+    _gaps = []
+    for _ in range(6):
+        _m, _c = _final(train_settle(10))
+        _gaps.append(school_error(_m, _c) - best_error)
+    return sum(_gaps) / len(_gaps) < 0.3
+check("Task 3 (deeper): shrink the steps so the walk settles",
+      defined("train_settle") and _ok(_t3),
+      "Count the steps in k and use step = 0.3 / (1 + k / 100). On average the final error should be within 0.3 of best_error.")
+check("Task 4 (deeper): GPT-3's steps",
+      defined("gpt3_steps") and _ok(lambda: 93_000 <= float(gpt3_steps) <= 94_000),
+      "Divide the total, 300,000,000,000, by the handful, 3,200,000.")
+</script>
+<script type="text/x-python" data-solution="handful">
+import random
+
+def slopes(m, c, people):
+    """Which way should m and c move? Measured on any list of people."""
+    slope_m, slope_c = 0, 0
+    for x, y in people:
+        miss = (m * x + c) - y
+        slope_m += 2 * miss * x / len(people)
+        slope_c += 2 * miss / len(people)
+    return slope_m, slope_c
+
+def train(batch_size, step_size=0.3, looks_allowed=20_000):
+    m, c = 0.0, 0.0
+    looks = 0
+    path, looked = [(m, c)], [0]
+    while looks < looks_allowed:
+        people = random.sample(school, batch_size)     # Task 1
+        slope_m, slope_c = slopes(m, c, people)
+        looks += len(people)
+        m = m - step_size * slope_m
+        c = c - step_size * slope_c
+        path.append((m, c))
+        looked.append(looks)
+    return path, looked
+
+runs = []
+for batch_size in [10_000, 1000, 100, 10]:
+    path, looked = train(batch_size)
+    m, c = path[-1]
+    print(f"batch {batch_size:>6}: {len(path) - 1:>5} steps, error {school_error(m, c):.2f}")
+    runs.append((batch_size, path, looked))
+print(f"best possible: {best_error:.2f}")
+board.show_handful(runs)
+# The whole school gets only 2 steps. A handful of 10 gets 2,000.
+
+# Task 2
+def looks_needed(batch_size):
+    m, c, looks = 0.0, 0.0, 0
+    for step in range(10_000):
+        if school_error(m, c) - best_error < 1:
+            break                                      # close enough
+        people = random.sample(school, batch_size)
+        slope_m, slope_c = slopes(m, c, people)
+        looks += len(people)
+        m = m - 0.3 * slope_m
+        c = c - 0.3 * slope_c
+    return looks
+
+for batch_size in [10_000, 1000, 100, 10]:
+    looks = looks_needed(batch_size)
+    print(f"batch {batch_size:>6}: looked at {looks:>6} people in {looks // batch_size} steps")
+# About the same number of steps every time! Early on, a rough direction
+# is all you need, so a handful does the job for a tiny part of the work.
+
+# Task 3
+def train_settle(batch_size):
+    m, c = 0.0, 0.0
+    for k in range(20_000 // batch_size):
+        people = random.sample(school, batch_size)
+        slope_m, slope_c = slopes(m, c, people)
+        step = 0.3 / (1 + k / 100)                     # smaller and smaller
+        m = m - step * slope_m
+        c = c - step * slope_c
+    return m, c
+
+m, c = train_settle(10)
+print(f"Settled: error {school_error(m, c):.3f} (best {best_error:.3f})")
+
+# Task 4
+gpt3_steps = 300_000_000_000 / 3_200_000
+print(f"GPT-3: about {gpt3_steps:,.0f} steps")
+# With all 300 billion tokens in every step, the same work buys ONE step.
+</script>
+  <aside class="fieldnote">
+    <svg viewBox="0 0 56 56" aria-hidden="true"><g fill="#0b6e8f"><circle cx="10" cy="14" r="3"/><circle cx="22" cy="10" r="3"/><circle cx="34" cy="16" r="3"/><circle cx="46" cy="11" r="3"/><circle cx="16" cy="26" r="3"/><circle cx="40" cy="27" r="3"/><circle cx="28" cy="31" r="3"/></g><g fill="#e8962e"><circle cx="22" cy="10" r="4.2"/><circle cx="40" cy="27" r="4.2"/><circle cx="16" cy="26" r="4.2"/></g><path d="M6 48 L16 42 L22 45 L32 39 L38 42 L50 36" fill="none" stroke="#102a32" stroke-width="2.5" stroke-linejoin="round"/></svg>
+    <div>
+      <p class="fn-kicker" data-no="No. 3">Field note</p>
+      <h3>Rough steps still get there</h3>
+      <p>In 1951 two American mathematicians, Herbert Robbins and Sutton Monro, proved something surprising: a walk steered by <b>rough, noisy measurements</b> still reaches the bottom, as long as its steps shrink slowly enough. Today this <b>stochastic gradient descent</b> ("stochastic" means random) trains almost every AI, from phone keyboards to ChatGPT.</p>
+    </div>
+  </aside>
+</section>
+
+<section class="activity extra">
+  <h2>Feel the slope yourself</h2>
+  <p class="task">A computer can't see the valley either. <code>height_at(x)</code> only tells you the height. Take a <b>tiny test step</b> and see how much the height changes: that gives the slope. Then find out why this simple idea is too slow for a real AI.</p>
+  <details class="hint"><summary>Hint for task 1</summary><div>Change in height: <code>height_at(x + tiny) - height_at(x)</code>. Divide it by <code>tiny</code> and return the answer.</div></details>
+  <details class="hint"><summary>Hint for tasks 3 and 4</summary><div>Task 3: the change in height from <code>x - tiny</code> to <code>x + tiny</code>, divided by the distance between them, <code>2 * tiny</code>. Task 4: one height where you are, plus one test step for each of the 1,000,000,000 numbers.</div></details>
+<script type="text/x-python" data-cell="feel" data-title="Measure the slope with a tiny step">
+tiny = 0.001     # a tiny test step
+
+def estimate_slope(x):
+    # Task 1: work out the height at x and at x + tiny.
+    #         slope = (change in height) / tiny
+    return 0     # replace 0 with your slope
+
+print("   x   your slope   real slope")
+for x in [1, 3, 4, 6, 9]:
+    height, real_slope = where_am_i(x)
+    print(f"{x:4}   {estimate_slope(x):10.3f}   {real_slope:10.3f}")
+
+# Task 2: at x = 2, is downhill to the "left" or to the "right"?
+#         Use estimate_slope(2) to decide. Store "left" or "right" in downhill_at_2.
+
+# Dig deeper:
+# Task 3: a better test: look a tiny bit to BOTH sides of x. Write
+#         estimate_slope_better(x) and print how far each estimate is from the
+#         real slope. Which is more accurate, and by about how many times?
+# Task 4: a big AI has 1,000,000,000 numbers, so its valley has a billion
+#         directions. Measuring every slope this way needs the height where you
+#         are, plus one test step for each number. How many height
+#         measurements is that for ONE step? Store it in measurements_per_step.
+#         At a millionth of a second each, how long is one step? Training
+#         needs millions of steps... (Lesson 3: the trick real AIs use.)
+</script>
+<script type="text/x-python" data-check="feel">
+def _slope_ok():
+    try:
+        return all(abs(float(estimate_slope(_x)) - where_am_i(_x)[1]) < 0.01 for _x in [0.5, 2, 4.1, 6.3, 8.8])
+    except Exception:
+        return False
+check("Task 1: estimate_slope matches the real slope",
+      defined("estimate_slope") and _slope_ok(),
+      "Return (height_at(x + tiny) - height_at(x)) / tiny. Your column should match the real slope.")
+check("Task 2: which way is downhill at x = 2",
+      defined("downhill_at_2") and str(downhill_at_2).strip().lower() == "right",
+      'A negative slope means the ground goes down as x gets bigger. Store "left" or "right" (with quotes).')
+def _ok(f):
+    try:
+        return bool(f())
+    except Exception:
+        return False
+check("Task 3 (deeper): look both ways",
+      defined("estimate_slope_better") and _ok(lambda: all(abs(float(estimate_slope_better(_x)) - where_am_i(_x)[1]) < 1e-5 for _x in [0.5, 2, 4.1, 6.3, 8.8])),
+      "(height_at(x + tiny) - height_at(x - tiny)) / (2 * tiny)")
+check("Task 4 (deeper): measurements for one step",
+      defined("measurements_per_step") and _ok(lambda: measurements_per_step == 10 ** 9 + 1),
+      "One height where you are, plus one for each of the 1,000,000,000 numbers.")
+</script>
+<script type="text/x-python" data-solution="feel">
+tiny = 0.001     # a tiny test step
+
+def estimate_slope(x):
+    change = height_at(x + tiny) - height_at(x)
+    return change / tiny
+
+print("   x   your slope   real slope")
+for x in [1, 3, 4, 6, 9]:
+    height, real_slope = where_am_i(x)
+    print(f"{x:4}   {estimate_slope(x):10.3f}   {real_slope:10.3f}")
+
+print("Slope at x = 2:", round(estimate_slope(2), 3))
+if estimate_slope(2) < 0:
+    downhill_at_2 = "right"     # height goes down as x grows
+else:
+    downhill_at_2 = "left"
+print("Downhill at x = 2 is to the", downhill_at_2)
+
+# Task 3
+def estimate_slope_better(x):
+    return (height_at(x + tiny) - height_at(x - tiny)) / (2 * tiny)
+
+for x in [1, 3, 6]:
+    real = where_am_i(x)[1]
+    print(f"x = {x}: one side off by {abs(estimate_slope(x) - real):.7f}, "
+          f"both sides off by {abs(estimate_slope_better(x) - real):.7f}")
+# Looking both ways is thousands of times more accurate.
+
+# Task 4
+measurements_per_step = 1_000_000_000 + 1
+print(f"{measurements_per_step:,} measurements: about {measurements_per_step / 1_000_000 / 60:.0f} minutes per step")
+</script>
+</section>
+
+<section class="activity extra">
+  <h2>Two valleys</h2>
+  <p class="task">This ground has two dips. Walking downhill always stops at the bottom of a dip, but not always the deepest one. Find a start that ends in the <b>deeper valley</b>. Walking downhill is greedy: it never climbs, so it can get stuck. Real AIs face the same problem.</p>
+  <div class="panel"><canvas class="plot" id="tv-plot" aria-label="A curve with two valleys and where each start ends"></canvas></div>
+  <aside class="fieldnote">
+    <svg viewBox="0 0 56 56" aria-hidden="true"><path d="M2 48 Q14 46 22 22 Q28 10 34 22 Q42 46 54 48" fill="#dcedf2" stroke="#0b6e8f" stroke-width="2.5"/><path d="M28 6 v6" stroke="#e8962e" stroke-width="2.5" stroke-linecap="round"/><path d="M25 18 Q18 30 10 44" fill="none" stroke="#e8962e" stroke-width="2" stroke-dasharray="3 3"/><path d="M31 18 Q38 30 46 44" fill="none" stroke="#e8962e" stroke-width="2" stroke-dasharray="3 3"/></svg>
+    <div>
+      <p class="fn-kicker" data-no="No. 4">Field note</p>
+      <h3>Rain on a ridge</h3>
+      <p>Two raindrops land a few centimetres apart on a mountain ridge. One runs down to the left, the other to the right, and they end up in <b>different seas</b>. Where a walk starts can decide where it ends. Real AIs often start from many random places and keep the best result.</p>
+    </div>
+  </aside>
+  <details class="hint"><summary>Hint for task 1</summary><div>All the starts in the list end in the same valley. Add some starts further to the left, such as 2 or 4.</div></details>
+  <details class="hint"><summary>Hint for tasks 2 and 3</summary><div>Task 2: <code>for k in range(21):</code> with <code>start = k / 2</code>; keep the smallest <code>two_valleys(walk_down(start))[0]</code>. Task 3: try starts 5.0, 5.1, 5.2 … and watch where each one ends.</div></details>
+<script type="text/x-python" data-cell="two" data-title="Where do you end up?">
+def two_valleys(x):
+    """Returns (height, slope) of ground with two dips."""
+    u = x - 5
+    height = 0.04 * u ** 4 - 0.8 * u ** 2 + 0.5 * u + 6
+    slope = 0.16 * u ** 3 - 1.6 * u + 0.5
+    return height, slope
+
+def walk_down(start, step_size=0.05, steps=200):
+    x = start
+    for step in range(steps):
+        height, slope = two_valleys(x)
+        x = x - step_size * slope
+    return x
+
+starts = [6, 7, 8, 9]
+ends = []
+for start in starts:
+    end = walk_down(start)
+    ends.append(end)
+    print(f"start {start}  ->  ends at x = {end:.2f}, height {two_valleys(end)[0]:.2f}")
+board.show_valleys(starts, ends)
+
+# Task 1: find a start that ends in the deeper valley. Store it in good_start.
+
+# Dig deeper:
+# Task 2: a simple fix for getting stuck: try lots of starts and keep the best.
+#         Walk down from every start 0, 0.5, 1, ..., 10 and store the LOWEST
+#         height you reach in lowest_found. (This mixes Lesson 1's search with
+#         today's walk.)
+# Task 3: somewhere in between there is a border: start just left of it and
+#         you roll into one valley, just right of it and you roll into the
+#         other. Find it to one decimal place and store it in border.
+#         What is special about the ground there? Think of rain falling on a
+#         mountain ridge.
+</script>
+<script type="text/x-python" data-check="two">
+def _tv_end(x):
+    for _ in range(400):
+        u = x - 5
+        x = x - 0.05 * (0.16 * u ** 3 - 1.6 * u + 0.5)
+    u = x - 5
+    return 0.04 * u ** 4 - 0.8 * u ** 2 + 0.5 * u + 6
+
+_good = False
+if defined("good_start"):
+    try:
+        _good = 0 <= float(good_start) <= 10 and _tv_end(float(good_start)) < 1
+    except (TypeError, ValueError, OverflowError):
+        _good = False
+check("Task 1: a start that ends in the deeper valley",
+      _good,
+      "Store a number from 0 to 10 in good_start. Its walk must end at a height below 1."
+      if defined("good_start") else "Store your starting point in a variable called good_start.")
+def _ok(f):
+    try:
+        return bool(f())
+    except Exception:
+        return False
+def _tv_x(x):
+    for _ in range(200):
+        u = x - 5
+        x = x - 0.05 * (0.16 * u ** 3 - 1.6 * u + 0.5)
+    return x
+def _tv_h(x):
+    u = x - 5
+    return 0.04 * u ** 4 - 0.8 * u ** 2 + 0.5 * u + 6
+_low = min(_tv_h(_tv_x(k / 2)) for k in range(21))
+check("Task 2 (deeper): try many starts, keep the best",
+      defined("lowest_found") and _ok(lambda: close(lowest_found, _low, 1e-3)),
+      "Walk down from each of the 21 starts and keep the smallest height.")
+check("Task 3 (deeper): the border between the valleys",
+      defined("border") and _ok(lambda: (_tv_h(_tv_x(float(border) - 0.1)) < 1) != (_tv_h(_tv_x(float(border) + 0.1)) < 1)),
+      "Starts 0.1 to the left and 0.1 to the right of your border should end in different valleys.")
+</script>
+<script type="text/x-python" data-solution="two">
+def two_valleys(x):
+    """Returns (height, slope) of ground with two dips."""
+    u = x - 5
+    height = 0.04 * u ** 4 - 0.8 * u ** 2 + 0.5 * u + 6
+    slope = 0.16 * u ** 3 - 1.6 * u + 0.5
+    return height, slope
+
+def walk_down(start, step_size=0.05, steps=200):
+    x = start
+    for step in range(steps):
+        height, slope = two_valleys(x)
+        x = x - step_size * slope
+    return x
+
+starts = [1, 3, 5, 5.5, 6, 7, 8, 9]
+ends = []
+for start in starts:
+    end = walk_down(start)
+    ends.append(end)
+    print(f"start {start}  ->  ends at x = {end:.2f}, height {two_valleys(end)[0]:.2f}")
+board.show_valleys(starts, ends)
+
+good_start = 3    # any start left of about 5.3 rolls into the deeper valley
+
+# Task 2
+lowest_found = None
+for k in range(21):
+    end = walk_down(k / 2)
+    h = two_valleys(end)[0]
+    if lowest_found is None or h < lowest_found:
+        lowest_found = h
+print("Lowest height found from 21 starts:", round(lowest_found, 3))
+
+# Task 3
+for k in range(50, 56):
+    start = k / 10
+    print(start, "->", round(walk_down(start), 2))
+border = 5.3
+# The border is the top of the little hill between the valleys: the slope is 0
+# there, like a ridge where rain can run off to either side.
+</script>
+</section>
+
+<section class="activity">
+  <h2>Check your understanding</h2>
+  <div class="quiz">
+    <div class="quiz-q" data-answer="2">
+      <p>You are standing on a hill. The slope under your feet is positive: the ground goes up to the right. Which way should you step to go downhill?</p>
+      <ol>
+        <li>To the right</li>
+        <li>To the left</li>
+        <li>Stay where you are</li>
+        <li>Jump to a random place</li>
+      </ol>
+      <p class="why">Downhill is the opposite way to the slope. That is why the code does <code>x = x - step_size * slope</code>.</p>
+    </div>
+    <div class="quiz-q" data-answer="3">
+      <p>What happens when the step size (learning rate) is too big?</p>
+      <ol>
+        <li>It always finds the bottom faster</li>
+        <li>It takes tiny steps and is very slow</li>
+        <li>It overshoots: it zig-zags or flies off</li>
+        <li>It gets stuck in the nearest small dip</li>
+      </ol>
+      <p class="why">Big steps overshoot the bottom. Too small is slow; too big zig-zags or flies away.</p>
+    </div>
+    <div class="quiz-q" data-answer="4">
+      <p>In Lesson 1 the computer tried thousands of lines. Why don't real AIs just try every combination of their numbers?</p>
+      <ol>
+        <li>Computers are not allowed to guess the answer</li>
+        <li>Trying lines gives a less accurate answer</li>
+        <li>Real AIs only have a few numbers to find</li>
+        <li>There are far too many combinations to ever try them all</li>
+      </ol>
+      <p class="why">Real AIs have billions of numbers. Even 10 numbers with 100 values each is 100<sup>10</sup> combinations. Walking downhill only needs the slope where you are now.</p>
+    </div>
+    <div class="quiz-q" data-answer="3">
+      <p>A real AI has a billion training examples. Why does each step use only a small random batch of them?</p>
+      <ol>
+        <li>A small batch gives the exact slope</li>
+        <li>The computer can only remember ten examples</li>
+        <li>A rough direction is good enough, so it can take far more steps for the same work</li>
+        <li>Using all the examples would make the error go up</li>
+      </ol>
+      <p class="why">Like an opinion poll, a random handful points roughly the right way. Thousands of rough steps beat a few perfect ones.</p>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p>What is a local minimum?</p>
+      <ol>
+        <li>The bottom of a dip that is not the lowest point overall</li>
+        <li>The highest point of the valley</li>
+        <li>A point where the slope is very steep</li>
+        <li>The best possible answer</li>
+      </ol>
+      <p class="why">Walking downhill stops at the bottom of whatever dip you are in. It might not be the deepest one.</p>
+    </div>
+  </div>
+</section>
+
+<script type="text/x-python" id="py-setup">
+import board
+import asyncio
+import math
+
+def where_am_i(x):
+    """Returns (height, slope) of the valley at position x."""
+    height = 0.6 * (x - 4) ** 2 + 1 + 0.15 * math.sin(2 * x)
+    slope = 1.2 * (x - 4) + 0.3 * math.cos(2 * x)
+    return height, slope
+
+def height_at(x):
+    """Returns only the height of the valley at position x."""
+    return 0.6 * (x - 4) ** 2 + 1 + 0.15 * math.sin(2 * x)
+
+# activity 4: a made-up school of 10,000 people (the page makes the numbers)
+_sd = board.school_data().to_py()
+school = [(_sd[i], _sd[i + 1]) for i in range(0, len(_sd), 2)]
+del _sd
+_n = len(school)
+_Sx = sum(x for x, y in school) / _n
+_Sy = sum(y for x, y in school) / _n
+_Sxx = sum(x * x for x, y in school) / _n
+_Sxy = sum(x * y for x, y in school) / _n
+_Syy = sum(y * y for x, y in school) / _n
+
+def school_error(m, c):
+    """Error score of the line (m, c) on the whole school, in cm²."""
+    return 100 * (m * m * _Sxx + 2 * m * c * _Sx + c * c - 2 * m * _Sxy - 2 * c * _Sy + _Syy)
+
+_bm = (_Sxy - _Sx * _Sy) / (_Sxx - _Sx * _Sx)
+best_error = school_error(_bm, _Sy - _bm * _Sx)
+</script>
+
+<footer class="credits">Python runs in your browser using Pyodide.
+  <div class="footer-tools"><button class="linkish" id="clear-saved" type="button">Clear my saved work on this page</button></div>
+</footer>
+</div>
+<script>
+/* Shared runtime for the "How Machines Learn" lessons.
+   - loads Python (Pyodide) in the browser
+   - turns <script type="text/x-python" data-cell> blocks into editable, runnable cells
+   - gives lessons a small canvas plotting helper (Plot)
+   Each lesson adds its own functions to Course.board; Python sees them as `import board`. */
+(function () {
+  "use strict";
+
+  const PYODIDE_VERSION = "314.0.7";
+  const PYODIDE_BASE = window.PYODIDE_BASE || `https://cdn.jsdelivr.net/npm/pyodide@${PYODIDE_VERSION}/`;
+
+  const Course = (window.Course = {
+    board: {},
+    hooks: {},
+    py: null,
+    lessonId: document.documentElement.dataset.lesson || "lesson",
+    reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    extraSavedKeys: [], // lesson-specific storage keys cleared by "Clear my saved work"
+  });
+
+  /* Teacher mode: open any lesson with ?teacher (or #teacher) to get solution buttons.
+     It stays on for the rest of the browser tab. */
+  Course.teacher = (() => {
+    // a page built as a solutions page (data-teacher="1") is always in teacher mode
+    if (document.documentElement.dataset.teacher === "1") return true;
+    let on = false;
+    try {
+      const p = new URLSearchParams(location.search);
+      if (p.has("teacher") || location.hash === "#teacher") sessionStorage.setItem("aicourse:teacher", "1");
+      if (p.get("teacher") === "0") sessionStorage.removeItem("aicourse:teacher");
+      on = sessionStorage.getItem("aicourse:teacher") === "1";
+    } catch (e) {
+      on = /[?&]teacher|#teacher/.test(location.href);
+    }
+    return on;
+  })();
+
+  /* ---------- small helpers ---------- */
+  Course.$ = (sel, root = document) => root.querySelector(sel);
+  Course.$$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+  Course.fmt = (n, d = 2) => (Number.isFinite(n) ? Number(n).toFixed(d) : "–");
+  Course.clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  Course.sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  Course.nextFrame = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
+
+  // The page accent colour (lessons can set their own with --accent)
+  const cssVar = (name, fallback) => {
+    try {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+    } catch (e) {
+      return fallback;
+    }
+  };
+  const cssAccent = () => {
+    try {
+      return getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#3f3bd9";
+    } catch (e) {
+      return "#3f3bd9";
+    }
+  };
+
+  Course.store = {
+    get(key, fallback) {
+      try {
+        const v = localStorage.getItem("aicourse:" + key);
+        return v === null ? fallback : JSON.parse(v);
+      } catch (e) {
+        return fallback;
+      }
+    },
+    set(key, value) {
+      try {
+        localStorage.setItem("aicourse:" + key, JSON.stringify(value));
+      } catch (e) {
+        /* storage unavailable: carry on without saving */
+      }
+    },
+    remove(key) {
+      try {
+        localStorage.removeItem("aicourse:" + key);
+      } catch (e) {}
+    },
+  };
+
+  /* Convert anything Python hands to JavaScript into plain JS values. */
+  Course.toJS = function (v) {
+    if (v && typeof v.toJs === "function") {
+      return v.toJs({ dict_converter: Object.fromEntries, create_pyproxies: false });
+    }
+    return v;
+  };
+
+  /* ---------- Python loading ---------- */
+  const statusEl = () => Course.$(".py-status");
+  function setStatus(state, text) {
+    const el = statusEl();
+    if (!el) return;
+    el.dataset.state = state;
+    el.textContent = text;
+  }
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error("Could not download Python from " + src));
+      document.head.appendChild(s);
+    });
+  }
+
+  let currentOut = null;
+  function writeOut(text, cls) {
+    const out = currentOut;
+    if (!out) {
+      console.log(text);
+      return;
+    }
+    if (cls) {
+      const span = document.createElement("span");
+      span.className = cls;
+      span.textContent = text;
+      out.appendChild(span);
+    } else {
+      const last = out.lastChild;
+      if (last && last.nodeType === 3) last.appendData(text);
+      else out.appendChild(document.createTextNode(text));
+    }
+    if (out.textContent.length > 120000) {
+      out.textContent = "… (older output removed)\n" + out.textContent.slice(-60000);
+    }
+    out.scrollTop = out.scrollHeight;
+  }
+
+  /* Helpers available to every task checker (see data-check scripts). */
+  Course.board._check = () => {};
+  const CHECK_HELPERS = `
+def check(label, ok, hint=""):
+    import board as _board
+    _board._check(str(label), bool(ok), str(hint))
+
+def defined(*names):
+    g = globals()
+    return all(n in g for n in names)
+
+def close(a, b, tol=0.01):
+    try:
+        return abs(float(a) - float(b)) <= tol * max(1.0, abs(float(b)))
+    except Exception:
+        return False
+`;
+
+  Course.ready = (async () => {
+    setStatus("loading", "Loading Python…");
+    await new Promise((r) => (document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", r) : r()));
+    await loadScript(PYODIDE_BASE + "pyodide.js");
+    const py = await window.loadPyodide({ indexURL: PYODIDE_BASE });
+    py.setStdout({ batched: (s) => writeOut(s + "\n") });
+    py.setStderr({ batched: (s) => writeOut(s + "\n", "err") });
+    py.registerJsModule("board", Course.board);
+    await py.runPythonAsync(CHECK_HELPERS);
+    const setup = document.getElementById("py-setup");
+    if (Course.hooks.beforeSetup) await Course.hooks.beforeSetup(py);
+    if (setup) await py.runPythonAsync(setup.textContent);
+    Course.py = py;
+    setStatus("ready", "Python ready");
+    return py;
+  })();
+  Course.ready.catch((e) => {
+    console.error(e);
+    setStatus("error", "Python didn't load");
+  });
+
+  /* ---------- Python syntax highlighting ---------- */
+  const KW = new Set(
+    "False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield".split(" ")
+  );
+  const BUILTIN = new Set(
+    "print range len sum min max abs round int float str list dict set tuple enumerate zip sorted reversed isinstance type map filter any all bool".split(" ")
+  );
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const TOKEN = /(#[^\n]*)|([rbfRBF]{0,2}(?:"""[\s\S]*?(?:"""|$)|'''[\s\S]*?(?:'''|$)|"(?:\\.|[^"\\\n])*"?|'(?:\\.|[^'\\\n])*'?))|(\b\d+(?:\.\d+)?(?:e[+-]?\d+)?\b)|([A-Za-z_]\w*)/g;
+  function highlight(code) {
+    let out = "";
+    let last = 0;
+    let m;
+    TOKEN.lastIndex = 0;
+    while ((m = TOKEN.exec(code))) {
+      out += esc(code.slice(last, m.index));
+      if (m[1]) out += `<span class="t-com">${esc(m[1])}</span>`;
+      else if (m[2]) out += `<span class="t-str">${esc(m[2])}</span>`;
+      else if (m[3]) out += `<span class="t-num">${esc(m[3])}</span>`;
+      else {
+        const w = m[4];
+        if (KW.has(w)) out += `<span class="t-kw">${w}</span>`;
+        else if (BUILTIN.has(w)) out += `<span class="t-bi">${w}</span>`;
+        else if (code[TOKEN.lastIndex] === "(") out += `<span class="t-fn">${w}</span>`;
+        else out += w;
+      }
+      last = TOKEN.lastIndex;
+    }
+    return out + esc(code.slice(last)) + "\n";
+  }
+
+  /* ---------- code cells ---------- */
+  const cells = new Map();
+  const checkers = new Map(); // cell id -> { code, labels }
+  const solutions = new Map(); // cell id -> code
+  let queue = Promise.resolve();
+
+  function cleanError(msg) {
+    const lines = String(msg).split("\n");
+    const i = lines.findIndex((l) => /File "<(exec|cell)>"/.test(l));
+    if (i > 0) return "Traceback (most recent call last):\n" + lines.slice(i).join("\n").trim();
+    return String(msg).trim();
+  }
+
+  /* A plain-English line under the most common Python errors. */
+  function friendlyError(msg) {
+    const last = String(msg).trim().split("\n").pop() || "";
+    const name = (last.match(/name '([^']+)' is not defined/) || [])[1];
+    if (/IndentationError|TabError/.test(last))
+      return "The spaces at the start of a line are wrong. Lines inside a for, if or def need 4 more spaces than the line above.";
+    if (/SyntaxError/.test(last)) {
+      if (/was never closed|unexpected EOF|'\(' was never closed/.test(last)) return "A bracket or quote was opened but never closed.";
+      if (/expected ':'/.test(last)) return "Lines starting with for, if, while, def or else must end with a colon :";
+      return "Python couldn't read this line. Look for a missing bracket, colon, comma or quote near the line shown.";
+    }
+    if (name) return `Python doesn't know the name "${name}". Check the spelling (capitals matter), or run the cell above first.`;
+    if (/ZeroDivisionError/.test(last)) return "Something was divided by zero. Is a list empty?";
+    if (/IndexError/.test(last)) return "You asked for a position that isn't in the list. Lists start at position 0.";
+    if (/KeyError/.test(last)) return "That key isn't in the dictionary.";
+    if (/TypeError/.test(last) && /str/.test(last) && /int|float/.test(last))
+      return "You mixed text and numbers. Use int() or float() to turn text into a number, or str() for the other way.";
+    if (/TypeError/.test(last)) return "A value is the wrong type for what you're doing with it. Check what each variable holds.";
+    if (/ValueError/.test(last)) return "A value has the right type but the wrong content.";
+    if (/AttributeError/.test(last)) return "That object doesn't have this method or property. Check the spelling.";
+    return "";
+  }
+
+  function insertText(ta, text) {
+    ta.focus();
+    if (!document.execCommand || !document.execCommand("insertText", false, text)) {
+      ta.setRangeText(text, ta.selectionStart, ta.selectionEnd, "end");
+      ta.dispatchEvent(new Event("input"));
+    }
+  }
+
+  /* ----- task checks: progress is remembered per lesson ----- */
+  const passedKey = `checks:${Course.lessonId}`;
+  const passed = Course.store.get(passedKey, {}) || {};
+  const checkKey = (cellId, label) => cellId + "::" + label;
+
+  function updateProgress() {
+    let total = 0;
+    let done = 0;
+    checkers.forEach((c, id) =>
+      c.labels.forEach((l) => {
+        total += 1;
+        if (passed[checkKey(id, l)]) done += 1;
+      })
+    );
+    let pill = Course.$(".progress-pill");
+    if (!total) return;
+    if (!pill) {
+      const head = Course.$(".lesson-head");
+      if (!head) return;
+      pill = document.createElement("span");
+      pill.className = "progress-pill";
+      pill.setAttribute("role", "status");
+      const status = Course.$(".py-status");
+      const box = document.createElement("div");
+      box.className = "head-pills";
+      if (status) {
+        status.replaceWith(box);
+        box.appendChild(pill);
+        box.appendChild(status);
+      } else head.appendChild(pill);
+    }
+    pill.textContent = `Tasks done: ${done} / ${total}`;
+    pill.dataset.complete = done === total ? "yes" : "no";
+  }
+
+  function renderChecks(cell, latest) {
+    const chk = checkers.get(cell.id);
+    if (!chk) return;
+    let box = cell.el.querySelector(".checks");
+    if (!box) {
+      box = document.createElement("ul");
+      box.className = "checks";
+      box.setAttribute("aria-label", "Your tasks for this cell");
+      cell.el.appendChild(box);
+    }
+    box.innerHTML = "";
+    chk.labels.forEach((label) => {
+      const ok = !!passed[checkKey(cell.id, label)];
+      const li = document.createElement("li");
+      li.className = ok ? "done" : "todo";
+      const mark = document.createElement("span");
+      mark.className = "mark";
+      mark.textContent = ok ? "✓" : "";
+      const text = document.createElement("span");
+      text.className = "label";
+      text.textContent = label;
+      li.append(mark, text);
+      const r = latest && latest.find((x) => x.label === label);
+      if (!ok && r && r.hint) {
+        const h = document.createElement("span");
+        h.className = "check-hint";
+        h.textContent = r.hint;
+        li.appendChild(h);
+      }
+      box.appendChild(li);
+    });
+  }
+
+  async function runChecks(cell, py) {
+    const chk = checkers.get(cell.id);
+    if (!chk) return;
+    const results = [];
+    Course.board._check = (label, ok, hint) => results.push({ label: String(label), ok: !!ok, hint: String(hint || "") });
+    py.globals.set("_output", cell.out.textContent);
+    const prev = currentOut;
+    currentOut = null;
+    try {
+      await py.runPythonAsync(chk.code, { filename: "<check>" });
+    } catch (e) {
+      console.warn("checker failed", e);
+    } finally {
+      currentOut = prev;
+    }
+    results.forEach((r) => {
+      if (r.ok) passed[checkKey(cell.id, r.label)] = true;
+    });
+    Course.store.set(passedKey, passed);
+    renderChecks(cell, results);
+    updateProgress();
+    return results;
+  }
+
+  function makeCell(script) {
+    const id = script.dataset.cell;
+    const original = script.textContent.replace(/^\n+/, "").replace(/\s+$/, "") + "\n";
+    const saveKey = `code:${Course.lessonId}:${id}`;
+    const baseKey = saveKey + ":base";
+    // A short fingerprint of the starter code, so saved work from an older
+    // version of the page is not shown in place of new instructions.
+    let h = 5381;
+    for (let i = 0; i < original.length; i++) h = ((h * 33) ^ original.charCodeAt(i)) >>> 0;
+    const baseHash = h.toString(36);
+    let saved = Course.store.get(saveKey, null);
+    let oldCode = null;
+    if (saved !== null && saved !== original && Course.store.get(baseKey, null) !== baseHash) {
+      oldCode = saved;          // saved against an older version of this cell
+      saved = null;
+    }
+
+    const wrap = document.createElement("div");
+    wrap.className = "cell";
+    wrap.id = "cell-" + id;
+    wrap.innerHTML = `
+      <div class="cell-bar">
+        <span class="cell-title"></span>
+        <span class="hint">Shift + Enter</span>
+        <button class="btn solution" type="button" hidden>Solution</button>
+        <button class="btn reset" type="button" title="Put the original code back">Reset</button>
+        <button class="btn run" type="button">Run</button>
+      </div>
+      <div class="editor">
+        <div class="gutter" aria-hidden="true"></div>
+        <div class="code-scroll"><div class="code-inner"><pre aria-hidden="true"></pre><textarea wrap="off" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Python code"></textarea></div></div>
+      </div>
+      <p class="cell-note" hidden>This cell has new instructions since you last worked on it, so it shows the new version. <button class="linkish old-code" type="button">Show my old code</button></p>
+      <pre class="out" aria-live="polite"></pre>`;
+    wrap.querySelector(".cell-title").textContent = script.dataset.title || "Python";
+    const ta = wrap.querySelector("textarea");
+    const pre = wrap.querySelector(".code-inner pre");
+    const gutter = wrap.querySelector(".gutter");
+    const out = wrap.querySelector(".out");
+    ta.value = saved !== null ? saved : original;
+
+    let lineCount = 0;
+    const render = () => {
+      pre.innerHTML = highlight(ta.value);
+      const n = ta.value.split("\n").length;
+      if (n !== lineCount) {
+        lineCount = n;
+        gutter.textContent = Array.from({ length: n }, (_, i) => i + 1).join("\n");
+      }
+    };
+    let saveTimer = null;
+    ta.addEventListener("input", () => {
+      render();
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => { Course.store.set(saveKey, ta.value); Course.store.set(baseKey, baseHash); }, 400);
+    });
+    render();
+
+    // keep the caret in view when a long line scrolls sideways
+    const scroller = wrap.querySelector(".code-scroll");
+    const followCaret = () => {
+      const before = ta.value.slice(0, ta.selectionStart);
+      const col = before.length - before.lastIndexOf("\n") - 1;
+      const x = 16 + col * 8.43; // approx. width of one character at 14px
+      if (x > scroller.scrollLeft + scroller.clientWidth - 24) scroller.scrollLeft = x - scroller.clientWidth + 48;
+      else if (x < scroller.scrollLeft + 16) scroller.scrollLeft = Math.max(0, x - 48);
+    };
+    ta.addEventListener("keyup", followCaret);
+    ta.addEventListener("click", followCaret);
+
+    ta.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (e.shiftKey || e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        cell.run();
+        return;
+      }
+      if (e.key === "Escape") {
+        ta.blur();
+        return;
+      }
+      if (e.key === "Tab") {
+        e.preventDefault();
+        const { selectionStart: s, selectionEnd: en, value } = ta;
+        if (s !== en && value.slice(s, en).includes("\n")) {
+          // indent / dedent the selected lines
+          const lineStart = value.lastIndexOf("\n", s - 1) + 1;
+          const block = value.slice(lineStart, en);
+          const changed = e.shiftKey ? block.replace(/^ {1,4}/gm, "") : block.replace(/^/gm, "    ");
+          ta.setSelectionRange(lineStart, en);
+          insertText(ta, changed);
+          ta.setSelectionRange(lineStart, lineStart + changed.length);
+        } else if (e.shiftKey) {
+          const lineStart = value.lastIndexOf("\n", s - 1) + 1;
+          const lead = value.slice(lineStart).match(/^ {1,4}/);
+          if (lead) {
+            ta.setSelectionRange(lineStart, lineStart + lead[0].length);
+            insertText(ta, "");
+          }
+        } else {
+          insertText(ta, "    ");
+        }
+        return;
+      }
+      if (e.key === "Enter") {
+        const { selectionStart: s, value } = ta;
+        const lineStart = value.lastIndexOf("\n", s - 1) + 1;
+        const line = value.slice(lineStart, s);
+        let indent = line.match(/^ */)[0];
+        if (/:\s*(#.*)?$/.test(line)) indent += "    ";
+        e.preventDefault();
+        insertText(ta, "\n" + indent);
+      }
+    });
+
+    const setCode = (code) => {
+      ta.value = code;
+      render();
+      Course.store.set(saveKey, code);
+      Course.store.set(baseKey, baseHash);
+    };
+    if (oldCode !== null) {
+      const note = wrap.querySelector(".cell-note");
+      note.hidden = false;
+      note.querySelector(".old-code").addEventListener("click", () => {
+        setCode(oldCode);
+        note.hidden = true;
+      });
+    }
+
+    wrap.querySelector(".run").addEventListener("click", () => cell.run());
+    wrap.querySelector(".reset").addEventListener("click", () => {
+      if (ta.value !== original && !confirm("Put the original code back? Your changes in this cell will be lost.")) return;
+      setCode(original);
+      Course.store.remove(saveKey);
+      Course.store.remove(baseKey);
+      out.textContent = "";
+    });
+    const solBtn = wrap.querySelector(".solution");
+    solBtn.addEventListener("click", () => {
+      const sol = solutions.get(id);
+      if (!sol) return;
+      if (ta.value !== original && ta.value !== sol && !confirm("Replace the code in this cell with the solution?")) return;
+      setCode(sol);
+    });
+
+    const cell = {
+      id,
+      el: wrap,
+      textarea: ta,
+      out,
+      needs: (script.dataset.needs || "").split(/[\s,]+/).filter(Boolean),
+      ranOK: false,
+      original,
+      run: () => runCell(cell, false),
+      setCode,
+      get code() {
+        return ta.value;
+      },
+    };
+    cells.set(id, cell);
+    script.replaceWith(wrap);
+    return cell;
+  }
+
+  function runCell(cell, quiet) {
+    const p = queue.then(() => execute(cell, quiet));
+    queue = p.catch(() => {});
+    return p;
+  }
+
+  async function execute(cell, quiet) {
+    // run any cells this one depends on that haven't been run yet
+    for (const dep of cell.needs) {
+      const c = cells.get(dep);
+      if (c && !c.ranOK) {
+        const ok = await execute(c, true);
+        if (!ok) {
+          cell.out.textContent = "";
+          writeTo(cell.out, `The cell "${c.el.querySelector(".cell-title").textContent}" above has an error. Fix it first.\n`, "err");
+          return false;
+        }
+      }
+    }
+    cell.el.classList.add("running");
+    Course.busy = true;
+    cell.out.textContent = "";
+    let py;
+    try {
+      if (!Course.py) writeTo(cell.out, "Waiting for Python to load…\n", "info");
+      py = await Course.ready;
+      cell.out.textContent = "";
+    } catch (e) {
+      cell.out.textContent = "";
+      writeTo(cell.out, "Python couldn't load, so code can't run. Check the internet connection and reload the page.\n", "err");
+      cell.el.classList.remove("running");
+      Course.busy = false;
+      return false;
+    }
+    if (quiet) writeTo(cell.out, "(run automatically because a cell below needed it)\n", "info");
+    await Course.nextFrame();
+    currentOut = cell.out;
+    let ok = true;
+    try {
+      if (Course.hooks.beforeRun) await Course.hooks.beforeRun(py, cell.id);
+      const result = await py.runPythonAsync(cell.code, { filename: "<cell>" });
+      if (result !== undefined && result !== null && !(result instanceof Promise)) {
+        let text;
+        if (typeof result === "object" && typeof result.toString === "function" && result.type !== undefined) {
+          text = py.globals.get("repr")(result);
+          if (result.destroy) result.destroy();
+        } else text = String(result);
+        writeOut(text + "\n");
+      }
+    } catch (e) {
+      ok = false;
+      writeOut(cleanError(e.message) + "\n", "err");
+      const help = friendlyError(e.message);
+      if (help) writeOut("→ " + help + "\n", "err-help");
+    } finally {
+      currentOut = null;
+      cell.el.classList.remove("running");
+      Course.busy = false;
+      cell.ranOK = ok;
+      if (Course.hooks.afterRun) {
+        try {
+          Course.hooks.afterRun(py, cell.id, ok);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+    if (ok && checkers.has(cell.id)) await runChecks(cell, py);
+    return ok;
+  }
+
+  function writeTo(out, text, cls) {
+    const prev = currentOut;
+    currentOut = out;
+    writeOut(text, cls);
+    currentOut = prev;
+  }
+
+  Course.cells = cells;
+  Course.solutions = solutions;
+  Course.checkers = checkers;
+  Course.passed = passed;
+  Course.runCell = (id) => runCell(cells.get(id), false);
+
+  function initCells() {
+    Course.$$('script[type="text/x-python"][data-solution]').forEach((sc) => {
+      solutions.set(sc.dataset.solution, sc.textContent.replace(/^\n+/, "").replace(/\s+$/, "") + "\n");
+      sc.remove();
+    });
+    Course.$$('script[type="text/x-python"][data-check]').forEach((sc) => {
+      const code = sc.textContent;
+      const labels = [];
+      code.replace(/check\(\s*(["'])((?:(?!\1).)+)\1/g, (_, q, label) => {
+        if (!labels.includes(label)) labels.push(label);
+      });
+      checkers.set(sc.dataset.check, { code, labels });
+      sc.remove();
+    });
+    Course.$$('script[type="text/x-python"][data-cell]').forEach(makeCell);
+    cells.forEach((cell) => {
+      renderChecks(cell, null);
+      if (Course.teacher && solutions.has(cell.id)) cell.el.querySelector(".solution").hidden = false;
+    });
+    updateProgress();
+    initQuizzes();
+    initPageTools();
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initCells);
+  else initCells();
+
+  /* ---------- end-of-lesson quiz ----------
+     <div class="quiz-q" data-answer="2"><p>Question</p><ol><li>…</li></ol><p class="why">…</p></div>
+     data-answer counts from 1. */
+  function initQuizzes() {
+    Course.$$(".quiz-q").forEach((q, qi) => {
+      const answer = Number(q.dataset.answer) - 1;
+      const list = q.querySelector("ol");
+      const why = q.querySelector(".why");
+      if (!list) return;
+      if (why) why.hidden = true;
+      const opts = document.createElement("div");
+      opts.className = "quiz-opts";
+      opts.setAttribute("role", "group");
+      Array.from(list.children).forEach((li, i) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "quiz-opt";
+        b.innerHTML = li.innerHTML;
+        b.addEventListener("click", () => {
+          if (q.dataset.done) return;
+          if (i === answer) {
+            b.classList.add("right");
+            q.dataset.done = "1";
+            if (why) why.hidden = false;
+            opts.querySelectorAll("button").forEach((x) => (x.disabled = x !== b));
+          } else {
+            b.classList.add("wrong");
+            b.disabled = true;
+          }
+        });
+        opts.appendChild(b);
+      });
+      list.replaceWith(opts);
+      const num = document.createElement("span");
+      num.className = "quiz-num";
+      num.textContent = qi + 1;
+      q.prepend(num);
+    });
+  }
+
+  /* ---------- teacher banner and "clear my saved work" ---------- */
+  Course.clearSaved = function () {
+    try {
+      const prefixes = [`aicourse:code:${Course.lessonId}:`, `aicourse:checks:${Course.lessonId}`];
+      const extra = Course.extraSavedKeys.map((k) => "aicourse:" + k);
+      const doomed = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (prefixes.some((p) => k.startsWith(p)) || extra.includes(k)) doomed.push(k);
+      }
+      doomed.forEach((k) => localStorage.removeItem(k));
+    } catch (e) {}
+  };
+  function initPageTools() {
+    const clear = Course.$("#clear-saved");
+    if (clear)
+      clear.addEventListener("click", () => {
+        if (!confirm("Clear everything saved on this page on this laptop (your code, ticks and answers)?")) return;
+        Course.clearSaved();
+        location.reload();
+      });
+    if (Course.teacher) {
+      document.body.classList.add("teacher-mode");
+      const bar = document.createElement("div");
+      bar.className = "teacher-bar";
+      bar.innerHTML = '<span><b>Teacher mode.</b> Each code cell has a Solution button.</span>' +
+        '<button class="btn small" type="button" data-act="solve-all">Load all solutions</button>' +
+        '<button class="btn small" type="button" data-act="exit">Leave teacher mode</button>';
+      bar.querySelector('[data-act="solve-all"]').addEventListener("click", () => {
+        if (!confirm("Replace the code in every cell with its solution?")) return;
+        cells.forEach((c) => solutions.has(c.id) && c.setCode(solutions.get(c.id)));
+      });
+      bar.querySelector('[data-act="exit"]').addEventListener("click", () => {
+        try {
+          sessionStorage.removeItem("aicourse:teacher");
+        } catch (e) {}
+        location.href = location.pathname;
+      });
+      document.body.prepend(bar);
+    }
+  }
+
+  /* ---------- Plot: a small canvas chart helper ---------- */
+  function niceStep(span, count) {
+    const raw = span / count;
+    const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+    const n = raw / pow;
+    return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * pow;
+  }
+
+  class Plot {
+    constructor(canvas, opts = {}) {
+      this.canvas = canvas;
+      this.ctx = canvas.getContext("2d");
+      this.o = Object.assign(
+        { xmin: 0, xmax: 1, ymin: 0, ymax: 1, aspect: 0.62, pad: { l: 56, r: 18, t: 16, b: 44 }, xlabel: "", ylabel: "", axes: true, gridLines: true, square: false },
+        opts
+      );
+      this.onRender = null;
+      this.resize();
+      new ResizeObserver(() => {
+        this.resize();
+        if (this.onRender) this.onRender();
+      }).observe(canvas);
+    }
+    resize() {
+      const dpr = window.devicePixelRatio || 1;
+      const w = this.canvas.clientWidth || 600;
+      const h = this.o.height || Math.round(w * this.o.aspect);
+      this.w = w;
+      this.h = h;
+      this.canvas.style.height = h + "px";
+      if (this.canvas.width !== Math.round(w * dpr) || this.canvas.height !== Math.round(h * dpr)) {
+        this.canvas.width = Math.round(w * dpr);
+        this.canvas.height = Math.round(h * dpr);
+      }
+      this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    setRange(r) {
+      Object.assign(this.o, r);
+    }
+    get plotW() {
+      return this.w - this.o.pad.l - this.o.pad.r;
+    }
+    get plotH() {
+      return this.h - this.o.pad.t - this.o.pad.b;
+    }
+    X(x) {
+      return this.o.pad.l + ((x - this.o.xmin) / (this.o.xmax - this.o.xmin)) * this.plotW;
+    }
+    Y(y) {
+      return this.o.pad.t + (1 - (y - this.o.ymin) / (this.o.ymax - this.o.ymin)) * this.plotH;
+    }
+    invX(px) {
+      return this.o.xmin + ((px - this.o.pad.l) / this.plotW) * (this.o.xmax - this.o.xmin);
+    }
+    invY(py) {
+      return this.o.ymin + (1 - (py - this.o.pad.t) / this.plotH) * (this.o.ymax - this.o.ymin);
+    }
+    eventPos(e) {
+      const r = this.canvas.getBoundingClientRect();
+      return { px: e.clientX - r.left, py: e.clientY - r.top };
+    }
+    clear() {
+      const c = this.ctx;
+      c.clearRect(0, 0, this.w, this.h);
+      c.fillStyle = cssVar("--card", "#ffffff");
+      c.fillRect(0, 0, this.w, this.h);
+      if (this.o.axes) this.drawAxes();
+    }
+    drawAxes() {
+      const c = this.ctx;
+      const o = this.o;
+      const { l, t } = o.pad;
+      c.save();
+      c.font = "12px " + getComputedStyle(document.body).fontFamily;
+      c.fillStyle = cssVar("--muted", "#5b6680");
+      c.strokeStyle = cssVar("--plot-grid", "#e6ebf3");
+      c.lineWidth = 1;
+      const xs = niceStep(o.xmax - o.xmin, Math.max(3, this.plotW / 80));
+      const ys = niceStep(o.ymax - o.ymin, Math.max(3, this.plotH / 50));
+      const dec = (s) => Math.max(0, -Math.floor(Math.log10(s) + 1e-9));
+      const tick = (v, d) => { const t = v.toFixed(d); return /^-0(\.0*)?$/.test(t) ? t.slice(1) : t; };
+      c.textAlign = "center";
+      c.textBaseline = "top";
+      for (let x = Math.ceil(o.xmin / xs) * xs; x <= o.xmax + 1e-9; x += xs) {
+        const px = Math.round(this.X(x)) + 0.5;
+        if (o.gridLines) {
+          c.beginPath();
+          c.moveTo(px, t);
+          c.lineTo(px, t + this.plotH);
+          c.stroke();
+        }
+        c.fillText(tick(x, dec(xs)), px, t + this.plotH + 6);
+      }
+      c.textAlign = "right";
+      c.textBaseline = "middle";
+      for (let y = Math.ceil(o.ymin / ys) * ys; y <= o.ymax + 1e-9; y += ys) {
+        const py = Math.round(this.Y(y)) + 0.5;
+        if (o.gridLines) {
+          c.beginPath();
+          c.moveTo(l, py);
+          c.lineTo(l + this.plotW, py);
+          c.stroke();
+        }
+        c.fillText(tick(y, dec(ys)), l - 8, py);
+      }
+      c.strokeStyle = cssVar("--plot-axis", "#8a95ad");
+      c.strokeRect(l + 0.5, t + 0.5, this.plotW, this.plotH);
+      c.fillStyle = cssVar("--ink", "#18213a");
+      c.font = "13px " + getComputedStyle(document.body).fontFamily;
+      if (o.xlabel) {
+        c.textAlign = "center";
+        c.textBaseline = "bottom";
+        c.fillText(o.xlabel, l + this.plotW / 2, this.h - 2);
+      }
+      if (o.ylabel) {
+        c.save();
+        c.translate(14, t + this.plotH / 2);
+        c.rotate(-Math.PI / 2);
+        c.textAlign = "center";
+        c.textBaseline = "middle";
+        c.fillText(o.ylabel, 0, 0);
+        c.restore();
+      }
+      c.restore();
+    }
+    clip(fn) {
+      const c = this.ctx;
+      c.save();
+      c.beginPath();
+      c.rect(this.o.pad.l, this.o.pad.t, this.plotW, this.plotH);
+      c.clip();
+      fn(c);
+      c.restore();
+    }
+    dot(x, y, { r = 5, fill = "#18213a", stroke = null, lw = 1.5 } = {}) {
+      const c = this.ctx;
+      c.beginPath();
+      c.arc(this.X(x), this.Y(y), r, 0, Math.PI * 2);
+      if (fill) {
+        c.fillStyle = fill;
+        c.fill();
+      }
+      if (stroke) {
+        c.strokeStyle = stroke;
+        c.lineWidth = lw;
+        c.stroke();
+      }
+    }
+    segment(x1, y1, x2, y2, { color = cssAccent(), lw = 2, dash = null } = {}) {
+      this.clip((c) => {
+        c.strokeStyle = color;
+        c.lineWidth = lw;
+        if (dash) c.setLineDash(dash);
+        c.beginPath();
+        c.moveTo(this.X(x1), this.Y(y1));
+        c.lineTo(this.X(x2), this.Y(y2));
+        c.stroke();
+      });
+    }
+    polyline(pts, { color = cssAccent(), lw = 2, dash = null } = {}) {
+      if (!pts.length) return;
+      this.clip((c) => {
+        c.strokeStyle = color;
+        c.lineWidth = lw;
+        c.lineJoin = "round";
+        if (dash) c.setLineDash(dash);
+        c.beginPath();
+        pts.forEach(([x, y], i) => (i ? c.lineTo(this.X(x), this.Y(y)) : c.moveTo(this.X(x), this.Y(y))));
+        c.stroke();
+      });
+    }
+    fn(f, opts = {}) {
+      const pts = [];
+      const n = Math.max(80, Math.round(this.plotW / 3));
+      for (let i = 0; i <= n; i++) {
+        const x = this.o.xmin + ((this.o.xmax - this.o.xmin) * i) / n;
+        pts.push([x, f(x)]);
+      }
+      this.polyline(pts, opts);
+    }
+    label(x, y, text, { color = "#18213a", align = "left", base = "bottom", size = 13, bold = false, dx = 0, dy = 0 } = {}) {
+      const c = this.ctx;
+      c.save();
+      c.font = `${bold ? "700 " : ""}${size}px ` + getComputedStyle(document.body).fontFamily;
+      c.fillStyle = color;
+      c.textAlign = align;
+      c.textBaseline = base;
+      c.fillText(text, this.X(x) + dx, this.Y(y) + dy);
+      c.restore();
+    }
+    heat(values, colorFn) {
+      // values: rows from top (ymax) to bottom (ymin), columns from xmin to xmax
+      const rows = values.length;
+      const cols = values[0].length;
+      const cw = this.plotW / cols;
+      const ch = this.plotH / rows;
+      const c = this.ctx;
+      for (let i = 0; i < rows; i++)
+        for (let j = 0; j < cols; j++) {
+          c.fillStyle = colorFn(values[i][j]);
+          c.fillRect(this.o.pad.l + j * cw, this.o.pad.t + i * ch, cw + 0.6, ch + 0.6);
+        }
+    }
+  }
+  Course.Plot = Plot;
+
+  /* Simple tween helper for animations; finishes instantly with reduced motion. */
+  Course.tween = function (ms, step) {
+    if (Course.reducedMotion || ms <= 0) {
+      step(1);
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      const t0 = performance.now();
+      function frame(now) {
+        const t = Math.min(1, (now - t0) / ms);
+        step(t);
+        if (t < 1) requestAnimationFrame(frame);
+        else resolve();
+      }
+      requestAnimationFrame(frame);
+    });
+  };
+
+  /* Class data shared by Lessons 1 and 2 (same website = same saved data). */
+  Course.exampleClassData = [
+    [152, 150], [155, 157], [158, 155], [160, 163], [161, 158], [163, 166], [164, 162], [165, 169],
+    [167, 165], [168, 171], [169, 167], [170, 174], [171, 170], [172, 169], [173, 177], [175, 173],
+    [176, 180], [177, 175], [178, 182], [180, 178], [181, 185], [183, 181], [185, 189], [188, 186],
+  ];
+  Course.getClassData = function () {
+    const d = Course.store.get("classData", null);
+    if (Array.isArray(d) && d.length >= 2) return d;
+    return Course.exampleClassData.map((r) => r.slice());
+  };
+})();
+
+</script>
+<script>
+(function () {
+  "use strict";
+  const { $, fmt, clamp, store } = Course;
+  const INK = "#0f2a33";
+  const ACCENT = "#0b6e8f";
+  const RED = "#d9363e";
+  const GREEN = "#1d9467";
+  const MUTED = "#5b6680";
+  Course.extraSavedKeys.push("L2fogBest");
+
+  // wide, flat plots get a taller shape on phones so their labels have room
+  function responsive(plot, wide, narrow) {
+    const fit = () => {
+      const want = plot.canvas.clientWidth && plot.canvas.clientWidth < 520 ? narrow : wide;
+      if (plot.o.aspect !== want) {
+        plot.o.aspect = want;
+        plot.resize();
+      }
+    };
+    fit();
+    return fit;
+  }
+
+  /* ================= 1. The foggy valley game ================= */
+  const fog = new Course.Plot($("#fog-plot"), { xmin: 0, xmax: 10, ymin: 0, ymax: 10, aspect: 0.55, xlabel: "Position x", ylabel: "Height" });
+  let valley;
+  let hiker;
+  let visited;
+  let steps;
+  let won;
+  let revealed;
+  let fogBest = store.get("L2fogBest", null);
+
+  function showBest() {
+    $("#fog-best").textContent = fogBest === null ? "–" : `${fogBest} steps`;
+  }
+
+  function newValley() {
+    const a = 0.2 + Math.random() * 0.25;
+    const x0 = 1.5 + Math.random() * 7;
+    const k = 1.5 + Math.random();
+    const phi = Math.random() * 6.28;
+    const h0 = 0.5 + Math.random() * 1.5;
+    valley = {
+      f: (x) => a * (x - x0) ** 2 + h0 + 0.05 * Math.sin(k * x + phi),
+      df: (x) => 2 * a * (x - x0) + 0.05 * k * Math.cos(k * x + phi),
+    };
+    let top = 0;
+    for (let x = 0; x <= 10; x += 0.1) top = Math.max(top, valley.f(x));
+    fog.setRange({ ymin: 0, ymax: Math.ceil(top + 1) });
+    hiker = x0 > 5 ? 0.4 : 9.6;
+    visited = [hiker];
+    steps = 0;
+    won = false;
+    revealed = false;
+    $("#fog-msg").textContent = "";
+    $("#fog-steps-box").className = "readout score";
+    $("#fog-left").disabled = false;
+    $("#fog-right").disabled = false;
+    $("#fog-new").className = "btn";
+    renderFog();
+  }
+
+  function renderFog() {
+    fog.clear();
+    if (!revealed && !won) {
+      fog.clip((c) => {
+        c.fillStyle = "rgba(160,140,105,0.20)";
+        c.fillRect(fog.o.pad.l, fog.o.pad.t, fog.plotW, fog.plotH);
+      });
+    }
+    if (revealed || won) fog.fn(valley.f, { color: GREEN, lw: 3 });
+    visited.forEach((x, i) => {
+      if (i) fog.segment(visited[i - 1], valley.f(visited[i - 1]), x, valley.f(x), { color: "#8a95ad", lw: 1.5, dash: [4, 4] });
+    });
+    visited.forEach((x) => fog.dot(x, valley.f(x), { r: 4, fill: "#8a95ad" }));
+    const h = valley.f(hiker);
+    const s = valley.df(hiker);
+    // a short piece of ground under the hiker's feet
+    fog.segment(hiker - 0.35, h - 0.35 * s, hiker + 0.35, h + 0.35 * s, { color: INK, lw: 4 });
+    fog.dot(hiker, h, { r: 9, fill: won ? GREEN : ACCENT, stroke: "#fff", lw: 2 });
+    if (won) {
+      fog.label(5, fog.o.ymax, `Bottom reached in ${steps} steps`, { align: "center", base: "top", dy: 10, size: 16, bold: true, color: GREEN });
+    }
+    $("#fog-h").textContent = fmt(h, 2);
+    $("#fog-s").textContent = fmt(s, 3);
+    $("#fog-steps").textContent = steps;
+  }
+  fog.onRender = renderFog;
+
+  function step(dir) {
+    if (won) return;
+    const size = Number($("#fog-step").value);
+    hiker = clamp(hiker + dir * size, 0, 10);
+    visited.push(hiker);
+    steps += 1;
+    if (Math.abs(valley.df(hiker)) < 0.08) {
+      won = true;
+      let msg = `You found the bottom in ${steps} steps.`;
+      if (revealed) msg += " You cleared the fog, so this one doesn't count for your best.";
+      else if (fogBest === null || steps < fogBest) {
+        msg += fogBest === null ? " That is your first best score." : " New best!";
+        fogBest = steps;
+        store.set("L2fogBest", fogBest);
+        showBest();
+      }
+      $("#fog-msg").innerHTML = `<span class="flash"></span> Press <b>New valley</b> to play again.`;
+      $("#fog-msg .flash").textContent = msg;
+      $("#fog-steps-box").className = "readout good";
+      $("#fog-left").disabled = true;
+      $("#fog-right").disabled = true;
+      $("#fog-new").className = "btn primary";
+    }
+    renderFog();
+  }
+  $("#fog-left").addEventListener("click", () => step(-1));
+  $("#fog-right").addEventListener("click", () => step(1));
+  $("#fog-new").addEventListener("click", newValley);
+  $("#fog-reveal").addEventListener("click", () => {
+    if (!revealed && !won) $("#fog-msg").textContent = "Fog cleared. This valley won't count for your best score.";
+    revealed = true;
+    renderFog();
+  });
+  $("#fog-step").addEventListener("input", (e) => ($("#fog-step-out").textContent = Number(e.target.value).toFixed(2)));
+
+  /* ================= 2. Walk downhill (driven by Python) ================= */
+  const vf = (x) => 0.6 * (x - 4) ** 2 + 1 + 0.15 * Math.sin(2 * x);
+  const walk = new Course.Plot($("#walk-plot"), { xmin: 0, xmax: 10, ymin: 0, ymax: 22, aspect: 0.42, xlabel: "Position x", ylabel: "Height" });
+  let walkPath = [];
+  let walkShown = 0;
+  let ballX = null;
+
+  const fitWalk = responsive(walk, 0.42, 0.75);
+  function renderWalk() {
+    fitWalk();
+    walk.clear();
+    walk.fn(vf, { color: INK, lw: 2.5 });
+    const shown = walkPath.slice(0, walkShown + 1);
+    shown.forEach((x, i) => {
+      if (i) walk.segment(shown[i - 1], vf(shown[i - 1]), x, vf(x), { color: ACCENT, lw: 1.5 });
+    });
+    shown.forEach((x) => walk.dot(x, vf(x), { r: 3.5, fill: ACCENT }));
+    if (ballX !== null) walk.dot(ballX, vf(ballX), { r: 9, fill: ACCENT, stroke: "#fff", lw: 2 });
+    if (walkPath.length) walk.label(5, walk.o.ymax, `step ${walkShown} of ${walkPath.length - 1}`, { align: "center", base: "top", dy: 8, bold: true });
+    else walk.label(5, walk.o.ymax, "Run the code to see the walk", { align: "center", base: "top", dy: 8, color: MUTED });
+  }
+  walk.onRender = renderWalk;
+
+  // Under the walk: one bar per step, showing how far that step moved
+  const lens = new Course.Plot($("#steplen-plot"), { xmin: 0, xmax: 40, ymin: 0, ymax: 1.5, aspect: 0.2, xlabel: "Step number", ylabel: "Step length", pad: { l: 56, r: 18, t: 12, b: 40 } });
+  const fitLens = responsive(lens, 0.2, 0.42);
+  function renderLens() {
+    fitLens();
+    const steps = [];
+    for (let i = 1; i < walkPath.length; i++) steps.push(Math.abs(walkPath[i] - walkPath[i - 1]));
+    const finite = steps.filter((d) => Number.isFinite(d) && d < 1e6);
+    const top = finite.length ? Math.max(...finite) : 1.5;
+    lens.setRange({ xmin: 0, xmax: Math.max(10, steps.length + 1), ymax: top > 0 ? top * 1.1 : 1.5 });
+    lens.clear();
+    const shown = Math.min(walkShown, steps.length);
+    lens.clip((c) => {
+      for (let i = 0; i < shown; i++) {
+        const d = Math.min(steps[i], lens.o.ymax);
+        if (!Number.isFinite(d)) continue;
+        const x0 = lens.X(i + 0.6), x1 = lens.X(i + 1.4);
+        c.fillStyle = i === shown - 1 ? "#e8962e" : ACCENT;
+        c.fillRect(x0, lens.Y(d), Math.max(1, x1 - x0), lens.Y(0) - lens.Y(d));
+      }
+    });
+    if (!walkPath.length) lens.label((lens.o.xmin + lens.o.xmax) / 2, lens.o.ymax, "Each step's length appears here", { align: "center", base: "top", dy: 6, color: MUTED });
+  }
+  lens.onRender = renderLens;
+
+  Course.board.animate_path = async (path) => {
+    walkPath = Course.toJS(path).map(Number);
+    const per = clamp(4000 / Math.max(1, walkPath.length), 30, 250);
+    for (let i = 0; i < walkPath.length; i++) {
+      walkShown = i;
+      const from = i ? walkPath[i - 1] : walkPath[0];
+      const to = walkPath[i];
+      if (Number.isFinite(to) && Math.abs(to) < 1e6) {
+        await Course.tween(i ? per : 0, (t) => {
+          ballX = from + (to - from) * t;
+          renderWalk();
+          renderLens();
+        });
+      } else {
+        ballX = null;
+        renderWalk();
+        renderLens();
+        break;
+      }
+    }
+  };
+
+  /* ================= 3. Step size explorer ================= */
+  const curves = {
+    one: { f: (x) => 0.5 * (x - 5) ** 2, df: (x) => x - 5, ymax: 14 },
+    two: {
+      f: (x) => 0.04 * (x - 5) ** 4 - 0.8 * (x - 5) ** 2 + 0.5 * (x - 5) + 6,
+      df: (x) => 0.16 * (x - 5) ** 3 - 1.6 * (x - 5) + 0.5,
+      ymax: 14,
+    },
+  };
+  const lrPlot = new Course.Plot($("#lr-plot"), { xmin: 0, xmax: 10, ymin: 0, ymax: 14, aspect: 0.6, xlabel: "Position x", ylabel: "Height" });
+  let curve = curves.one;
+  let start = 9;
+  let lrPath = [];
+  let lrBall = null;
+  let playing = false;
+  const lr = () => Math.pow(10, Number($("#lr").value));
+
+  function renderLr() {
+    lrPlot.clear();
+    lrPlot.fn(curve.f, { color: INK, lw: 2.5 });
+    lrPath.forEach((x, i) => {
+      if (i) lrPlot.segment(lrPath[i - 1], curve.f(lrPath[i - 1]), x, curve.f(x), { color: ACCENT, lw: 1.5 });
+    });
+    lrPath.forEach((x) => lrPlot.dot(x, curve.f(x), { r: 3.5, fill: ACCENT }));
+    lrPlot.dot(start, curve.f(start), { r: 7, fill: "#fff", stroke: INK, lw: 2 });
+    lrPlot.label(start, curve.f(start), "start", { dx: -12, dy: 4, align: "right", base: "top", color: INK, bold: true });
+    if (lrBall !== null) lrPlot.dot(lrBall, curve.f(lrBall), { r: 9, fill: ACCENT, stroke: "#fff", lw: 2 });
+  }
+  lrPlot.onRender = renderLr;
+
+  function setResult(text, kind) {
+    $("#lr-result").textContent = text;
+    $("#lr-result-box").className = "readout" + (kind ? " " + kind : "");
+  }
+
+  $("#lr").addEventListener("input", () => ($("#lr-out").textContent = lr() < 0.1 ? lr().toFixed(3) : lr().toFixed(2)));
+  $("#lr-two").addEventListener("change", (e) => {
+    curve = e.target.checked ? curves.two : curves.one;
+    lrPath = [];
+    lrBall = null;
+    setResult("Press Play");
+    renderLr();
+  });
+  lrPlot.canvas.addEventListener("pointerdown", (e) => {
+    if (playing) return;
+    const { px } = lrPlot.eventPos(e);
+    start = clamp(lrPlot.invX(px), 0.2, 9.8);
+    lrPath = [];
+    lrBall = null;
+    setResult("Press Play");
+    renderLr();
+  });
+
+  $("#lr-play").addEventListener("click", async () => {
+    if (playing) return;
+    playing = true;
+    $("#lr-play").disabled = true;
+    const size = lr();
+    let x = start;
+    lrPath = [x];
+    let result = null;
+    for (let n = 1; n <= 60; n++) {
+      const next = x - size * curve.df(x);
+      $("#lr-steps").textContent = n;
+      if (!Number.isFinite(next) || next < -5 || next > 15) {
+        lrBall = null;
+        result = ["Overshot and flew off the mountain!", "bad"];
+        renderLr();
+        break;
+      }
+      const from = x;
+      await Course.tween(220, (t) => {
+        lrBall = from + (next - from) * t;
+        renderLr();
+      });
+      x = next;
+      lrPath.push(x);
+      if (Math.abs(curve.df(x)) < 0.01) {
+        result = [`Reached a bottom in ${n} steps.`, "good"];
+        break;
+      }
+    }
+    if (!result) result = ["Still walking after 60 steps.", "score"];
+    renderLr();
+    setResult(result[0], result[1]);
+    playing = false;
+    $("#lr-play").disabled = false;
+  });
+
+  /* ================= 4. Gradient descent on the class data ================= */
+  const data = Course.getClassData();
+  const all = data.flat();
+  const lo = Math.floor((Math.min(...all) - 6) / 5) * 5;
+  const hi = Math.ceil((Math.max(...all) + 6) / 5) * 5;
+  const gd = new Course.Plot($("#gd-plot"), { xmin: lo, xmax: hi, ymin: lo, ymax: hi, aspect: 0.62, xlabel: "Height (cm)", ylabel: "Arm span (cm)" });
+  const gdErr = new Course.Plot($("#gd-err"), { xmin: 0, xmax: 30, ymin: 0, ymax: 10, aspect: 0.5, xlabel: "Step", ylabel: "Error (cm²)" });
+
+  // the same scaled units as the Python code: decimetres above 170 cm
+  const sx = data.map(([h]) => (h - 170) / 10);
+  const sy = data.map(([, s]) => (s - 170) / 10);
+  const N = sx.length;
+  const sum = (arr) => arr.reduce((a, b) => a + b, 0);
+  const Sxx = sum(sx.map((x) => x * x)) / N;
+  const Sx = sum(sx) / N;
+  const Sy = sum(sy) / N;
+  const Sxy = sum(sx.map((x, i) => x * sy[i])) / N;
+  const Syy = sum(sy.map((y) => y * y)) / N;
+  // error score in cm², for a line m, c in scaled units (expanded so it is fast to evaluate)
+  const errAt = (m, c) => 100 * (m * m * Sxx + 2 * m * c * Sx + c * c - 2 * m * Sxy - 2 * c * Sy + Syy);
+  const varX = Sxx - Sx * Sx;
+  const bestM = varX > 1e-12 ? (Sxy - Sx * Sy) / varX : 0;
+  const bestC = Sy - bestM * Sx;
+  const bestErr = errAt(bestM, bestC);
+
+  // map window: a square around the start (0, 0) and the lowest point
+  const half = Math.max(Math.abs(bestM), Math.abs(bestC)) / 2 + 0.6;
+  const cm = bestM / 2;
+  const cc = bestC / 2;
+  const land = new Course.Plot($("#gd-land"), {
+    xmin: cm - half, xmax: cm + half, ymin: cc - half, ymax: cc + half,
+    aspect: 0.98, xlabel: "slope m", ylabel: "intercept c (scaled)", gridLines: false,
+  });
+
+  // sequential blue ramp: light = low error (valley floor), dark = high error
+  const RAMP = ["#f7fbff", "#deebf7", "#c6dbef", "#9ecae1", "#6baed6", "#4292c6", "#2171b5", "#08519c", "#08306b"];
+  const BANDS = 12;
+  const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const rampAt = (t) => {
+    const p = clamp(t, 0, 1) * (RAMP.length - 1);
+    const i = Math.min(RAMP.length - 2, Math.floor(p));
+    const a = hex(RAMP[i]);
+    const b = hex(RAMP[i + 1]);
+    const f = p - i;
+    return a.map((v, k) => Math.round(v + (b[k] - v) * f));
+  };
+  $("#land-bar").style.background = `linear-gradient(90deg, ${RAMP.join(", ")})`;
+
+  // the coloured map is drawn once into a small off-screen image, then scaled onto the plot
+  let landImg = null;
+  function buildMap() {
+    const G = 220;
+    const o = land.o;
+    const vals = new Float64Array(G * G);
+    let top = 0;
+    for (let i = 0; i < G; i++) {
+      const c = o.ymax - ((i + 0.5) / G) * (o.ymax - o.ymin);
+      for (let j = 0; j < G; j++) {
+        const e = errAt(o.xmin + ((j + 0.5) / G) * (o.xmax - o.xmin), c);
+        vals[i * G + j] = e;
+        top = Math.max(top, e);
+      }
+    }
+    const span = Math.max(1e-9, top - bestErr);
+    landImg = document.createElement("canvas");
+    landImg.width = landImg.height = G;
+    const g = landImg.getContext("2d");
+    const img = g.createImageData(G, G);
+    vals.forEach((e, k) => {
+      // square-root scale so the valley floor gets as many shades as the steep walls; banded like a contour map
+      const band = Math.min(BANDS - 1, Math.floor(Math.sqrt(Math.max(0, e - bestErr) / span) * BANDS));
+      const [r, gg, b] = rampAt(band / (BANDS - 1));
+      img.data.set([r, gg, b, 255], k * 4);
+    });
+    g.putImageData(img, 0, 0);
+  }
+
+  // axes for the map: tick values built from whole multiples of the step, so 0 never prints as "-0.0"
+  land.drawAxes = function () {
+    const c = this.ctx;
+    const o = this.o;
+    const { l, t } = o.pad;
+    const font = getComputedStyle(document.body).fontFamily;
+    const ticks = (lo, hi, step) => {
+      const out = [];
+      for (let k = Math.ceil(lo / step - 1e-9); k * step <= hi + 1e-9; k++) out.push(k * step);
+      return out;
+    };
+    const nice = (span, count) => {
+      const raw = span / count;
+      const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+      const n = raw / pow;
+      return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * pow;
+    };
+    const dec = (s) => Math.max(0, -Math.floor(Math.log10(s) + 1e-9));
+    const txt = (v, s) => (Math.abs(v) < s / 1e6 ? 0 : v).toFixed(dec(s));
+    const step = nice(Math.max(o.xmax - o.xmin, o.ymax - o.ymin), Math.max(3, this.plotW / 80));
+    c.save();
+    c.font = "12px " + font;
+    c.fillStyle = MUTED;
+    c.textAlign = "center";
+    c.textBaseline = "top";
+    ticks(o.xmin, o.xmax, step).forEach((v) => c.fillText(txt(v, step), this.X(v), t + this.plotH + 6));
+    c.textAlign = "right";
+    c.textBaseline = "middle";
+    ticks(o.ymin, o.ymax, step).forEach((v) => c.fillText(txt(v, step), l - 8, this.Y(v)));
+    c.fillStyle = INK;
+    c.font = "13px " + font;
+    c.textAlign = "center";
+    c.textBaseline = "bottom";
+    c.fillText(o.xlabel, l + this.plotW / 2, this.h - 2);
+    c.translate(14, t + this.plotH / 2);
+    c.rotate(-Math.PI / 2);
+    c.textBaseline = "middle";
+    c.fillText(o.ylabel, 0, 0);
+    c.restore();
+  };
+
+  let fitPath = [];
+  let errs = [];
+
+  function star(plot, x, y, r) {
+    const c = plot.ctx;
+    const px = plot.X(x);
+    const py = plot.Y(y);
+    c.save();
+    c.beginPath();
+    for (let k = 0; k < 10; k++) {
+      const rr = k % 2 ? r * 0.45 : r;
+      const a = -Math.PI / 2 + (k * Math.PI) / 5;
+      c[k ? "lineTo" : "moveTo"](px + rr * Math.cos(a), py + rr * Math.sin(a));
+    }
+    c.closePath();
+    c.fillStyle = GREEN;
+    c.strokeStyle = "#fff";
+    c.lineWidth = 2;
+    c.fill();
+    c.stroke();
+    c.restore();
+  }
+
+  function renderLand() {
+    if (!landImg) buildMap();
+    land.clear();
+    land.ctx.imageSmoothingEnabled = true;
+    land.ctx.drawImage(landImg, land.o.pad.l, land.o.pad.t, land.plotW, land.plotH);
+    land.ctx.strokeStyle = "#8a95ad"; // frame on top of the colours
+    land.ctx.lineWidth = 1;
+    land.ctx.strokeRect(land.o.pad.l + 0.5, land.o.pad.t + 0.5, land.plotW, land.plotH);
+    const o = land.o;
+    const inside = ([m, c]) => m >= o.xmin && m <= o.xmax && c >= o.ymin && c <= o.ymax;
+    const start = fitPath.length ? fitPath[0] : [0, 0];
+    const pts = fitPath.filter(([m, c]) => Number.isFinite(m) && Number.isFinite(c) && Math.abs(m) < 1e6 && Math.abs(c) < 1e6);
+    if (pts.length > 1) {
+      land.polyline(pts, { color: "#fff", lw: 4.5 });
+      land.polyline(pts, { color: RED, lw: 2 });
+    }
+    const r = pts.length > 25 ? 2.5 : 3.5;
+    land.clip(() => pts.slice(1, -1).forEach(([m, c]) => land.dot(m, c, { r, fill: RED, stroke: "#fff", lw: 1 })));
+    land.dot(start[0], start[1], { r: 7, fill: "#fff", stroke: INK, lw: 2.5 });
+    land.label(start[0], start[1], "start", { dx: 0, dy: 12, align: "center", base: "top", bold: true, color: INK });
+    if (fitPath.length > 1) {
+      const now = fitPath[fitPath.length - 1];
+      if (inside(now)) land.dot(now[0], now[1], { r: 10, fill: RED, stroke: "#fff", lw: 2.5 });
+      else {
+        const msg = "The walk has left the map!";
+        const ctx = land.ctx;
+        ctx.save();
+        ctx.font = "700 14px " + getComputedStyle(document.body).fontFamily;
+        const w = ctx.measureText(msg).width + 20;
+        ctx.fillStyle = "rgba(255,255,255,0.94)";
+        ctx.strokeStyle = RED;
+        ctx.lineWidth = 1.5;
+        const bx = land.o.pad.l + land.plotW / 2 - w / 2;
+        const by = land.o.pad.t + 10;
+        ctx.beginPath();
+        ctx.roundRect ? ctx.roundRect(bx, by, w, 26, 6) : ctx.rect(bx, by, w, 26);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+        land.label((o.xmin + o.xmax) / 2, o.ymax, msg, { align: "center", base: "middle", dy: 23, bold: true, color: RED, size: 14 });
+      }
+    }
+    star(land, bestM, bestC, 8); // on top, so it still shows when the walk reaches it
+  }
+  land.onRender = renderLand;
+
+  land.canvas.addEventListener("pointermove", (e) => {
+    const { px, py } = land.eventPos(e);
+    const m = land.invX(px);
+    const c = land.invY(py);
+    const o = land.o;
+    if (m < o.xmin || m > o.xmax || c < o.ymin || c > o.ymax) return;
+    $("#land-read").textContent = `m = ${fmt(m, 2)}, c = ${fmt(c, 2)}: error score ${fmt(errAt(m, c), 1)} cm²`;
+  });
+  land.canvas.addEventListener("pointerleave", () => {
+    $("#land-read").textContent = `Lowest possible error: ${fmt(bestErr, 2)} cm² at m = ${fmt(bestM, 3)}, c = ${fmt(bestC, 3)}.`;
+  });
+
+  function renderGd() {
+    gd.clear();
+    const now = fitPath.length ? fitPath[fitPath.length - 1] : null;
+    if (now && Number.isFinite(now[0]) && Number.isFinite(now[1])) {
+      const m = now[0];
+      const cCm = 170 - 170 * m + 10 * now[1];
+      gd.segment(lo, m * lo + cCm, hi, m * hi + cCm, { color: RED, lw: 3 });
+    } else gd.label(lo, hi, "Run the code to fit a line", { dx: 10, dy: 8, base: "top", color: MUTED });
+    data.forEach(([h, s]) => gd.dot(h, s, { r: 4.5, fill: INK, stroke: "#fff" }));
+  }
+
+  function renderErr() {
+    const finite = errs.filter(Number.isFinite);
+    let top = finite.length ? Math.max(finite[0], bestErr * 2, 1) : Math.max(bestErr * 4, 10);
+    // if the walk is flying off, stretch the graph so the climb is visible
+    if (finite.length && finite[finite.length - 1] > finite[0] * 1.5) top = Math.max(...finite);
+    gdErr.setRange({ xmax: Math.max(10, errs.length), ymax: top * 1.1 });
+    gdErr.clear();
+    gdErr.segment(0, bestErr, gdErr.o.xmax, bestErr, { color: GREEN, lw: 2, dash: [7, 5] });
+    gdErr.label(gdErr.o.xmax, bestErr, `best possible ${fmt(bestErr, 2)}`, { align: "right", base: "bottom", dx: -8, dy: -4, size: 12, bold: true, color: GREEN });
+    gdErr.polyline(errs.map((e, i) => [i, Math.min(e, top * 50)]), { color: RED, lw: 2.5 });
+    if (errs.length) {
+      const last = errs[errs.length - 1];
+      gdErr.label(gdErr.o.xmax, gdErr.o.ymax, `now: ${Math.abs(last) < 1e6 ? fmt(last, 2) : "huge"}`, { align: "right", base: "top", dx: -10, dy: 8, bold: true, color: RED });
+    } else {
+      gdErr.label(gdErr.o.xmin, gdErr.o.ymax, "Run the code to see the error fall", { dx: 10, dy: 8, base: "top", color: MUTED });
+    }
+  }
+  gd.onRender = renderGd;
+  gdErr.onRender = renderErr;
+
+  Course.board.show_fit = (path, errors) => {
+    fitPath = Course.toJS(path).map((p) => [Number(p[0]), Number(p[1])]);
+    errs = Course.toJS(errors).map(Number);
+    renderLand();
+    renderGd();
+    renderErr();
+  };
+
+  /* ================= 5. Learn from a handful at a time ================= */
+  // a made-up school of 10,000 people, the same on every computer (seeded random numbers)
+  const SCHOOL_N = 10000;
+  const school = (() => {
+    let a = 2026;
+    const rnd = () => {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const gauss = () => Math.sqrt(-2 * Math.log(1 - rnd())) * Math.cos(2 * Math.PI * rnd());
+    const out = new Float64Array(SCHOOL_N * 2);
+    for (let i = 0; i < SCHOOL_N; i++) {
+      const h = 166 + 9 * gauss();
+      const s = h - 2 + 4.5 * gauss();
+      out[2 * i] = (h - 170) / 10;
+      out[2 * i + 1] = (s - 170) / 10;
+    }
+    return out;
+  })();
+  Course.board.school_data = () => Array.from(school);
+  const hs = (() => {
+    let x = 0, y = 0, xx = 0, xy = 0, yy = 0;
+    for (let i = 0; i < SCHOOL_N; i++) {
+      const u = school[2 * i], v = school[2 * i + 1];
+      x += u; y += v; xx += u * u; xy += u * v; yy += v * v;
+    }
+    return { x: x / SCHOOL_N, y: y / SCHOOL_N, xx: xx / SCHOOL_N, xy: xy / SCHOOL_N, yy: yy / SCHOOL_N };
+  })();
+  const schoolErr = (m, c) => 100 * (m * m * hs.xx + 2 * m * c * hs.x + c * c - 2 * m * hs.xy - 2 * c * hs.y + hs.yy);
+  const sBestM = (hs.xy - hs.x * hs.y) / (hs.xx - hs.x * hs.x);
+  const sBestC = hs.y - sBestM * hs.x;
+  const sBest = schoolErr(sBestM, sBestC);
+  const sStart = schoolErr(0, 0);
+  const RUN_COLS = ["#102a32", "#0b6e8f", "#e8962e", "#c2410c", "#7a4fb5", "#1d9467"];
+  let hfRuns = [];
+
+  const race = new Course.Plot($("#hf-race"), {
+    xmin: 0, xmax: 20, ymin: Math.max(0, Math.floor(sBest / 5) * 5 - 5), ymax: Math.ceil((sStart * 1.05) / 10) * 10,
+    aspect: 0.78, xlabel: "People looked at (thousands)", ylabel: "Error (cm²)",
+  });
+  const sHalf = Math.max(Math.abs(sBestM), Math.abs(sBestC)) / 2 + 0.6;
+  const hmap = new Course.Plot($("#hf-map"), {
+    xmin: sBestM / 2 - sHalf, xmax: sBestM / 2 + sHalf, ymin: sBestC / 2 - sHalf, ymax: sBestC / 2 + sHalf,
+    aspect: 0.78, xlabel: "slope m", ylabel: "intercept c (scaled)", gridLines: false,
+  });
+  hmap.drawAxes = land.drawAxes;
+
+  let hmapImg = null;
+  function buildSchoolMap() {
+    const G = 200;
+    const o = hmap.o;
+    const vals = new Float64Array(G * G);
+    let top = 0;
+    for (let i = 0; i < G; i++) {
+      const c = o.ymax - ((i + 0.5) / G) * (o.ymax - o.ymin);
+      for (let j = 0; j < G; j++) {
+        const e = schoolErr(o.xmin + ((j + 0.5) / G) * (o.xmax - o.xmin), c);
+        vals[i * G + j] = e;
+        top = Math.max(top, e);
+      }
+    }
+    const span = Math.max(1e-9, top - sBest);
+    hmapImg = document.createElement("canvas");
+    hmapImg.width = hmapImg.height = G;
+    const g = hmapImg.getContext("2d");
+    const img = g.createImageData(G, G);
+    vals.forEach((e, k) => {
+      const band = Math.min(BANDS - 1, Math.floor(Math.sqrt(Math.max(0, e - sBest) / span) * BANDS));
+      const [r, gg, b] = rampAt(band / (BANDS - 1));
+      img.data.set([r, gg, b, 255], k * 4);
+    });
+    g.putImageData(img, 0, 0);
+  }
+
+  const runColour = (i) => RUN_COLS[i % RUN_COLS.length];
+  const runName = (b) => (b >= SCHOOL_N ? `everyone (${b.toLocaleString("en-GB")})` : `handful of ${b.toLocaleString("en-GB")}`);
+  const thin = (pts, max) => {
+    if (pts.length <= max) return pts;
+    const k = Math.ceil(pts.length / max);
+    const out = pts.filter((_, i) => i % k === 0);
+    out.push(pts[pts.length - 1]);
+    return out;
+  };
+
+  function renderRace() {
+    race.clear();
+    const o = race.o;
+    race.segment(0, sBest, o.xmax, sBest, { color: GREEN, lw: 2, dash: [7, 5] });
+    race.label(o.xmax, sBest, `best possible ${fmt(sBest, 2)}`, { align: "right", base: "bottom", dx: -8, dy: -4, size: 12, bold: true, color: GREEN });
+    if (!hfRuns.length) {
+      race.label(o.xmax / 2, o.ymax, "Run the code to start the race", { align: "center", base: "top", dy: 10, color: MUTED });
+      return;
+    }
+    // draw the slowest walks first, so the busy handful lines sit on top
+    hfRuns.forEach((r, i) => {
+      const pts = [];
+      for (let k = 0; k < r.err.length; k++) {
+        const x = r.looked[k] / 1000;
+        const y = Math.min(r.err[k], o.ymax * 2);
+        if (k) pts.push([x, pts[pts.length - 1][1]]); // the error only changes when a step is finished
+        pts.push([x, y]);
+      }
+      race.clip(() => race.polyline(thin(pts, 3000), { color: runColour(i), lw: r.batch >= SCHOOL_N ? 3.5 : 2.5 }));
+      race.clip(() => race.dot(Math.min(r.looked[r.looked.length - 1] / 1000, o.xmax), Math.min(r.err[r.err.length - 1], o.ymax), { r: 5, fill: runColour(i), stroke: "#fff", lw: 1.5 }));
+    });
+    const same = hfRuns.every((r) => r.steps === hfRuns[0].steps);
+    if (same && hfRuns.length > 1) {
+      const lines = race.plotW < 380
+        ? ["All the walks are the same:", "each step looks at everyone.", "Task 1 changes that."]
+        : ["All the walks are the same: every step", "still looks at everyone. Task 1 changes that."];
+      const ctx = race.ctx;
+      ctx.save();
+      ctx.font = "700 13px " + getComputedStyle(document.body).fontFamily;
+      const w = Math.max(...lines.map((t) => ctx.measureText(t).width)) + 24;
+      const h = lines.length * 18 + 14;
+      const cx = race.o.pad.l + race.plotW / 2;
+      const top = race.Y((o.ymin + o.ymax) / 2) - h / 2;
+      ctx.fillStyle = "rgba(255,253,248,0.96)";
+      ctx.strokeStyle = RED;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(cx - w / 2, top, w, h, 6) : ctx.rect(cx - w / 2, top, w, h);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = RED;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      lines.forEach((t, k) => ctx.fillText(t, cx, top + 8 + k * 18));
+      ctx.restore();
+    }
+  }
+
+  function renderHmap() {
+    if (!hmapImg) buildSchoolMap();
+    hmap.clear();
+    hmap.ctx.imageSmoothingEnabled = true;
+    hmap.ctx.drawImage(hmapImg, hmap.o.pad.l, hmap.o.pad.t, hmap.plotW, hmap.plotH);
+    hmap.ctx.strokeStyle = "#8a95ad";
+    hmap.ctx.lineWidth = 1;
+    hmap.ctx.strokeRect(hmap.o.pad.l + 0.5, hmap.o.pad.t + 0.5, hmap.plotW, hmap.plotH);
+    hfRuns.slice().reverse().forEach((r, ri) => {
+      const i = hfRuns.length - 1 - ri;
+      const pts = thin(r.path.filter(([m, c]) => Number.isFinite(m) && Number.isFinite(c) && Math.abs(m) < 1e3 && Math.abs(c) < 1e3), 900);
+      if (pts.length < 2) return;
+      hmap.clip(() => {
+        hmap.polyline(pts, { color: "#fff", lw: r.batch >= SCHOOL_N ? 5 : 3 });
+        hmap.polyline(pts, { color: runColour(i), lw: r.batch >= SCHOOL_N ? 3 : 1.5 });
+        if (r.batch >= SCHOOL_N || pts.length < 40) pts.forEach(([m, c]) => hmap.dot(m, c, { r: 3.5, fill: runColour(i), stroke: "#fff", lw: 1 }));
+        const [em, ec] = pts[pts.length - 1];
+        hmap.dot(em, ec, { r: 6, fill: runColour(i), stroke: "#fff", lw: 2 });
+      });
+    });
+    hmap.dot(0, 0, { r: 7, fill: "#fff", stroke: INK, lw: 2.5 });
+    hmap.label(0, 0, "start", { dx: 0, dy: 12, align: "center", base: "top", bold: true, color: INK });
+    star(hmap, sBestM, sBestC, 8);
+  }
+
+  function renderHfTable() {
+    const key = $("#hf-key");
+    const tbl = $("#hf-table");
+    if (!hfRuns.length) {
+      key.innerHTML = "";
+      tbl.innerHTML = "";
+      return;
+    }
+    key.innerHTML = hfRuns.map((r, i) => `<span><i style="background:${runColour(i)}"></i>${runName(r.batch)}</span>`).join("");
+    const rows = hfRuns.map((r, i) => {
+      const e = r.err[r.err.length - 1];
+      const gap = e - sBest;
+      return `<tr><td><i style="background:${runColour(i)}"></i>${runName(r.batch)}</td><td>${r.steps.toLocaleString("en-GB")}</td>` +
+        `<td>${r.looked[r.looked.length - 1].toLocaleString("en-GB")}</td><td>${Number.isFinite(e) && e < 1e6 ? fmt(e, 2) : "huge"}</td>` +
+        `<td>${Number.isFinite(gap) && gap < 1e6 ? "+" + fmt(gap, 2) : "–"}</td></tr>`;
+    });
+    tbl.innerHTML = `<thead><tr><th>Each step looks at</th><th>Steps</th><th>People looked at</th><th>Final error</th><th>Above best</th></tr></thead><tbody>${rows.join("")}</tbody>`;
+  }
+
+  const raceFit = responsive(race, 0.78, 0.95);
+  const hmapFit = responsive(hmap, 0.78, 0.95);
+  race.onRender = () => { raceFit(); renderRace(); };
+  hmap.onRender = () => { hmapFit(); renderHmap(); };
+  Course.board.show_handful = (runs) => {
+    hfRuns = Course.toJS(runs).map((r) => {
+      const path = (r[1] || []).map((p) => [Number(p[0]), Number(p[1])]);
+      const looked = (r[2] || []).map(Number);
+      return { batch: Number(r[0]), path, looked, steps: path.length - 1, err: path.map(([m, c]) => schoolErr(m, c)) };
+    });
+    renderRace();
+    renderHmap();
+    renderHfTable();
+  };
+
+  /* ================= 6. Two valleys (extra) ================= */
+  const tvf = curves.two.f;
+  const tv = new Course.Plot($("#tv-plot"), { xmin: 0, xmax: 10, ymin: 0, ymax: 14, aspect: 0.42, xlabel: "Position x", ylabel: "Height" });
+  let tvStarts = [];
+  let tvEnds = [];
+  const fitTv = responsive(tv, 0.42, 0.8);
+  function renderTv() {
+    fitTv();
+    tv.clear();
+    tv.fn(tvf, { color: INK, lw: 2.5 });
+    const narrow = tv.w < 520;
+    if (narrow) tv.label(1.69, 0.15, "deepest", { align: "left", base: "middle", dx: 18, bold: true, color: GREEN, size: 12 });
+    else tv.label(1.85, tvf(1.69), "deepest point", { align: "center", base: "bottom", dy: -16, bold: true, color: GREEN });
+    tv.label(7.99, tvf(7.99), "local minimum", { align: "center", base: "top", dy: 12, bold: true, color: MUTED });
+    tvStarts.forEach((s, i) => {
+      const e = tvEnds[i];
+      if (!Number.isFinite(s) || !Number.isFinite(e)) return;
+      const pts = [];
+      for (let k = 0; k <= 40; k++) {
+        const x = s + ((e - s) * k) / 40;
+        pts.push([x, tvf(x)]);
+      }
+      const deep = tvf(e) < 1;
+      tv.polyline(pts, { color: deep ? GREEN : ACCENT, lw: 3 });
+      tv.dot(s, tvf(s), { r: 6, fill: "#fff", stroke: deep ? GREEN : ACCENT, lw: 2.5 });
+      tv.dot(e, tvf(e), { r: 8, fill: deep ? GREEN : ACCENT, stroke: "#fff", lw: 2 });
+    });
+    if (!tvStarts.length) tv.label(5, tv.o.ymax, tv.w < 520 ? "Run the code" : "Run the code to see where each start ends", { align: "center", base: "top", dy: 8, color: MUTED });
+  }
+  tv.onRender = renderTv;
+  Course.board.show_valleys = (starts, ends) => {
+    tvStarts = Course.toJS(starts).map(Number);
+    tvEnds = Course.toJS(ends).map(Number);
+    renderTv();
+  };
+
+  Course.hooks.beforeRun = (py) => {
+    py.globals.set("heights", py.toPy(data.map((r) => r[0])));
+    py.globals.set("spans", py.toPy(data.map((r) => r[1])));
+  };
+
+  showBest();
+  newValley();
+  renderWalk();
+  renderLens();
+  renderLr();
+  renderLand();
+  $("#land-read").textContent = `Lowest possible error: ${fmt(bestErr, 2)} cm² at m = ${fmt(bestM, 3)}, c = ${fmt(bestC, 3)}. Point at the map to read other errors.`;
+  renderGd();
+  renderErr();
+  renderRace();
+  renderHmap();
+  renderTv();
+})();
+
+</script>
+</body>
+</html>

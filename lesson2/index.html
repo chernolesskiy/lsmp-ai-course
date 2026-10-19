@@ -368,6 +368,8 @@ ol.watch li { margin: 4px 0; }
 }
 
 /* ---------- expedition field-guide styling ---------- */
+.activity > h3.sub { font-family: var(--display); font-size: 1.3rem; font-weight: 700; margin: 34px 0 6px 44px; padding-top: 14px; border-top: 1.5px dashed var(--trail); }
+@media (max-width: 700px) { .activity > h3.sub { margin-left: 0; } }
 body { background: var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='640' viewBox='0 0 640 640'%3E%3Cg fill='none' stroke='%230b6e8f' stroke-opacity='0.06' stroke-width='1.4'%3E%3Cpath d='M120 160c60-70 190-60 220 10s-40 150-130 140S60 230 120 160z'/%3E%3Cpath d='M90 150c70-100 250-90 290 10s-50 200-180 190S20 250 90 150z'/%3E%3Cpath d='M60 140c80-130 310-120 360 10s-60 250-230 240S-20 270 60 140z'/%3E%3Cpath d='M470 470c50-40 140-20 140 50s-90 90-140 70-50-90 0-120z'/%3E%3Cpath d='M440 455c70-70 210-40 205 70s-130 130-200 100-80-120-5-170z'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 640px 640px repeat; }
 .lesson-num { font-size: 4rem; font-weight: 700; line-height: 0.9; }
 .lesson-head h1 { font-size: 2.5rem; font-weight: 700; }
@@ -481,7 +483,7 @@ details.hint summary { font: 700 0.8rem/1.4 var(--mono); letter-spacing: 0.04em;
 </section>
 
 <section class="activity">
-  <h2>Walk downhill in Python</h2>
+  <h2>Walk downhill</h2>
   <p class="task"><code>where_am_i(x)</code> gives the height and slope at position x. Run the walk, then make it <b>stop by itself</b> when it reaches the bottom (task 1) and find out <b>why the minus sign</b> matters (task 2). Tasks 3 and 4 dig deeper into why the rule works.</p>
   <div class="panel">
     <canvas class="plot" id="walk-plot" aria-label="Valley with the path your code takes"></canvas>
@@ -604,11 +606,9 @@ print("Steps to reach a slope below 0.0001:", steps_for_tiny)
       <p>Drop a marble in a bowl and it rolls to the bottom. Our walk is a very careful marble: it has <b>no speed</b>, it only looks at the slope where it stands. Real AI training often gives the walk a little speed, called <b>momentum</b> (an idea from 1964), so it can roll through small bumps instead of stopping in them.</p>
     </div>
   </aside>
-</section>
 
-<section class="activity">
-  <h2>How big should each step be?</h2>
-  <p class="task">Click the graph to choose a start, pick a step size and press <b>Play</b>. Find a step size that is too small, one that is just right and one that is too big.</p>
+  <h3 class="sub">How big should each step be?</h3>
+  <p class="task">The <b>step size</b> (the learning rate) decides how far each step goes. Click the graph to choose a start, pick a step size and press <b>Play</b>. Find a step size that is too small, one that is just right and one that is too big.</p>
   <div class="panel split">
     <canvas class="plot" id="lr-plot" aria-label="Gradient descent explorer"></canvas>
     <div>
@@ -626,10 +626,10 @@ print("Steps to reach a slope below 0.0001:", steps_for_tiny)
       </div>
     </div>
   </div>
-  <p class="task">Now test step sizes on the valley from activity 2. Find the <b>biggest step size that still reaches the bottom</b>, then ask a harder question: is the biggest step also the <b>fastest</b>?</p>
-  <details class="hint"><summary>Hint for task 1</summary><div>1.0 works and 2.0 flies off, so the answer is in between. Try 1.2, 1.4, 1.6 … then narrow it down.</div></details>
-  <details class="hint"><summary>Hint for task 2</summary><div>Loop <code>for k in range(1, 16):</code> with <code>step_size = k / 10</code> and keep the one with the smallest <code>steps_to_bottom(step_size)</code>.</div></details>
-  <details class="hint"><summary>Hint for task 3</summary><div>One step is <code>x = 8 - step_size * 2 * (8 - 4)</code>, which is <code>8 - 8 * step_size</code>. Which step size makes that exactly 4?</div></details>
+  <p class="task">Now test step sizes in code, on the same valley as your walk. Find the <b>biggest step size that still reaches the bottom</b> (task 5), then ask a harder question: is the biggest step also the <b>fastest</b> (task 6)? Task 7 digs deeper.</p>
+  <details class="hint"><summary>Hint for task 5</summary><div>1.0 works and 2.0 flies off, so the answer is in between. Try 1.2, 1.4, 1.6 … then narrow it down.</div></details>
+  <details class="hint"><summary>Hint for task 6</summary><div>Loop <code>for k in range(1, 16):</code> with <code>step_size = k / 10</code> and keep the one with the smallest <code>steps_to_bottom(step_size)</code>.</div></details>
+  <details class="hint"><summary>Hint for task 7</summary><div>One step is <code>x = 8 - step_size * 2 * (8 - 4)</code>, which is <code>8 - 8 * step_size</code>. Which step size makes that exactly 4?</div></details>
 <script type="text/x-python" data-cell="sizes" data-title="Test many step sizes">
 def steps_to_bottom(step_size, start=9.0, max_steps=500):
     x = start
@@ -645,14 +645,14 @@ def steps_to_bottom(step_size, start=9.0, max_steps=500):
 for step_size in [0.01, 0.05, 0.1, 0.3, 0.6, 1.0, 2.0]:
     print(f"step size {step_size:<5} ->  {steps_to_bottom(step_size)}")
 
-# Task 1: find the biggest step size that still reaches the bottom.
+# Task 5: find the biggest step size that still reaches the bottom.
 #         Add more step sizes to the list, then store your answer in biggest_ok.
-# Task 2: is the biggest step also the fastest? Try every step size from 0.1
+# Task 6: is the biggest step also the fastest? Try every step size from 0.1
 #         to 1.5 in steps of 0.1. Store the one that needs the FEWEST steps
 #         in fastest_step. Is it the biggest one?
 
 # Dig deeper (if you finish early):
-# Task 3: on the simple valley height = (x - 4) ** 2, the slope is 2 * (x - 4).
+# Task 7: on the simple valley height = (x - 4) ** 2, the slope is 2 * (x - 4).
 #         Start at x = 8. Which step size lands EXACTLY on the bottom (x = 4)
 #         in ONE step? Store it in one_step_size. Then try that step size
 #         from a different start, such as x = 1. What happens, and why?
@@ -672,7 +672,7 @@ elif not isinstance(_res, int):
     _hs = f"steps_to_bottom({biggest_ok}) says: {_res} Try a smaller step size."
 else:
     _hs = f"{biggest_ok} works ({_res} steps). Can you go bigger? Try values between 1.0 and 2.0."
-check("Task 1: biggest step size that still reaches the bottom",
+check("Task 5: biggest step size that still reaches the bottom",
       isinstance(_res, int) and float(biggest_ok) >= 1.4, _hs)
 def _ok(f):
     try:
@@ -691,10 +691,10 @@ def _stb(ss):
     return None
 _grid = [k / 10 for k in range(1, 16)]
 _fewest = min(_stb(g) for g in _grid)
-check("Task 2: the fastest step size",
+check("Task 6: the fastest step size",
       defined("fastest_step") and _ok(lambda: any(close(fastest_step, g, 1e-9) for g in _grid) and _stb(float(fastest_step)) == _fewest),
       f"Try all 15 step sizes from 0.1 to 1.5. The fastest needs only {_fewest} steps.")
-check("Task 3 (deeper): the perfect single step",
+check("Task 7 (deeper): the perfect single step",
       defined("one_step_size") and _ok(lambda: close(one_step_size, 0.5, 1e-6)),
       "After one step x = 8 - step_size * 2 * (8 - 4). Which step size makes that exactly 4?")
 </script>
@@ -713,9 +713,9 @@ def steps_to_bottom(step_size, start=9.0, max_steps=500):
 for step_size in [0.01, 0.05, 0.1, 0.3, 0.6, 1.0, 1.2, 1.4, 1.5, 1.6, 1.8, 2.0]:
     print(f"step size {step_size:<5} ->  {steps_to_bottom(step_size)}")
 
-biggest_ok = 1.5      # 1.5 takes 33 steps; 1.6 zig-zags forever, 1.8 flies off
+biggest_ok = 1.5      # Task 5: 1.5 takes 33 steps; 1.6 zig-zags forever, 1.8 flies off
 
-# Task 2
+# Task 6
 fastest_step, fewest = None, None
 for k in range(1, 16):
     step_size = k / 10
@@ -725,7 +725,7 @@ for k in range(1, 16):
 print(f"Fastest: step size {fastest_step} needs {fewest} steps")
 # Not the biggest: 1.5 needs 33 steps because it zig-zags.
 
-# Task 3
+# Task 7
 one_step_size = 0.5
 print("One step from 8:", 8 - one_step_size * 2 * (8 - 4))
 print("One step from 1:", 1 - one_step_size * 2 * (1 - 4))
@@ -977,7 +977,7 @@ raw_step_ok = 0.00001
 
 <section class="activity">
   <h2>Learn from a handful at a time</h2>
-  <p class="task">In activity 4 every step looked at your whole class. A real AI learns from millions of examples: photos, sentences, games. Looking at all of them for every single step would take for ever. The trick is the one pollsters use before an election: <b>ask a random handful</b>, not everyone. Here is a made-up school of <b>10,000 people</b>. Every walk below may look at 20,000 people in total. Which one gets closest to the best line?</p>
+  <p class="task">In activity 3 every step looked at your whole class. A real AI learns from millions of examples: photos, sentences, games. Looking at all of them for every single step would take for ever. The trick is the one pollsters use before an election: <b>ask a random handful</b>, not everyone. Here is a made-up school of <b>10,000 people</b>. Every walk below may look at 20,000 people in total. Which one gets closest to the best line?</p>
   <div class="panel">
     <div class="gd-grid">
       <div>
@@ -997,7 +997,7 @@ raw_step_ok = 0.00001
   <details class="hint"><summary>Hint for tasks 3 and 4</summary><div>Task 3: copy <code>train</code>, count the steps in a variable <code>k</code> (0, 1, 2, …) and use <code>step = 0.3 / (1 + k / 100)</code> in place of <code>step_size</code>. Return <code>m, c</code>. Task 4: <code>300_000_000_000 / 3_200_000</code>.</div></details>
 <script type="text/x-python" data-cell="handful" data-title="One handful per step">
 # school is a list of 10,000 (x, y) pairs: height and arm span in decimetres
-# above 170 cm, like activity 4. school_error(m, c) is the error score for
+# above 170 cm, like activity 3. school_error(m, c) is the error score for
 # the WHOLE school (in cm²) and best_error is the lowest possible.
 import random
 
@@ -1468,7 +1468,7 @@ def height_at(x):
     """Returns only the height of the valley at position x."""
     return 0.6 * (x - 4) ** 2 + 1 + 0.15 * math.sin(2 * x)
 
-# activity 5: a made-up school of 10,000 people (the page makes the numbers)
+# activity 4: a made-up school of 10,000 people (the page makes the numbers)
 _sd = board.school_data().to_py()
 school = [(_sd[i], _sd[i + 1]) for i in range(0, len(_sd), 2)]
 del _sd
@@ -1515,6 +1515,8 @@ best_error = school_error(_bm, _Sy - _bm * _Sx)
   /* Teacher mode: open any lesson with ?teacher (or #teacher) to get solution buttons.
      It stays on for the rest of the browser tab. */
   Course.teacher = (() => {
+    // a page built as a solutions page (data-teacher="1") is always in teacher mode
+    if (document.documentElement.dataset.teacher === "1") return true;
     let on = false;
     try {
       const p = new URLSearchParams(location.search);

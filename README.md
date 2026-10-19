@@ -6,5 +6,6 @@ Course index: https://chernolesskiy.github.io/lsmp-ai-course/
 - Error landscapes (Lesson 1 extra): /landscapes/
 - Lesson 2: /lesson2/
 - Lesson 1 answers: /answers/
+- Lesson 2 solutions: /lesson2-solutions/
 
 Answers (for teachers): https://chernolesskiy.github.io/lsmp-ai-course/answers/
