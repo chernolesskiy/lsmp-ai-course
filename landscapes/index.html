@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Error Landscapes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+/* Layout: a classroom handout in four numbered parts (they build on each other, so the numbers are real).
+   Each part is a short explanation and a pair of views: the landscape in 3D and the same thing as a map.
+   A single light look on purpose: it is made for a projector and for printing screenshots to draw on. */
+:root {
+  --paper: #f6f8fc;
+  --card: #ffffff;
+  --ink: #18213a;
+  --muted: #5b6680;
+  --line: #d5dceb;
+  --accent: #3f3bd9;
+  --marker: #f5c518;
+  --red: #d9363e;
+  --amber: #9a6b00;
+  --font: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+body {
+  margin: 0;
+  background: var(--paper); color: var(--ink); font-family: var(--font); font-size: 17px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 48px;
+}
+.wrap { max-width: 1320px; margin: 0 auto; display: grid; gap: 40px; }
+header { display: grid; gap: 6px; border-bottom: 3px solid var(--ink); padding-bottom: 14px; }
+.kicker { font: 700 0.75rem/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin: 0; }
+h1 { margin: 0; font-size: clamp(1.7rem, 3.4vw, 2.5rem); line-height: 1.1; text-wrap: balance; }
+.lead { margin: 0; color: var(--muted); max-width: 72ch; }
+nav { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 6px; }
+nav a { color: var(--ink); font-weight: 700; text-decoration: none; border-bottom: 2px solid var(--marker); }
+nav a:hover, nav a:focus-visible { color: var(--accent); }
+section.part { display: grid; gap: 14px; scroll-margin-top: 16px; }
+.part-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; align-items: baseline; }
+.num {
+  grid-row: span 2; display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 50%;
+  background: var(--ink); color: #fff; font-weight: 700; font-size: 1.1rem; align-self: start;
+}
+h2 { margin: 0; font-size: 1.5rem; line-height: 1.2; text-wrap: balance; }
+.part-head p { margin: 0; color: var(--muted); max-width: 78ch; }
+.part-head p b { color: var(--ink); }
+.controls { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
+.check { display: inline-flex; gap: 8px; align-items: center; font-weight: 700; cursor: pointer; }
+.check input { width: 18px; height: 18px; accent-color: var(--accent); }
+.check input:focus-visible { outline: 3px solid var(--marker); outline-offset: 2px; }
+.read { font-family: var(--mono); font-size: 0.9rem; font-weight: 700; color: var(--red); }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.grid.one { grid-template-columns: minmax(0, 1fr); }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 12px 6px; min-width: 0; display: grid; gap: 2px; }
+.panel h3 { margin: 0; font: 700 0.74rem/1.3 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
+.panel .hint { margin: 0; color: var(--muted); font-size: 0.88rem; }
+.plot { width: 100%; height: min(58vh, 500px); min-height: 340px; }
+.plot.short { height: min(42vh, 360px); min-height: 280px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 18px; font-weight: 700; font-size: 0.95rem; }
+.legend .g { color: var(--red); }
+.legend .l { color: var(--amber); }
+.error { color: var(--red); font-weight: 700; }
+@media (max-width: 860px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .plot { height: 400px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="kicker">How Machines Learn · Lesson 1 extras</p>
+    <h1>Error landscapes</h1>
+    <p class="lead">Every line is one pair of numbers: a slope <b>m</b> and an intercept <b>c</b>. Give each line its error score as a height, and all the lines together make a landscape. The best line is the lowest point.</p>
+    <nav aria-label="Parts of this page">
+      <a href="#class">1 Every line we tried</a>
+      <a href="#bowl">2 The idea: a bowl</a>
+      <a href="#minima">3 Local and global minima</a>
+      <a href="#more">4 More than two numbers</a>
+    </nav>
+    <p class="error" id="load-error" hidden>The charts could not load. Check the internet connection and reload the page.</p>
+  </header>
+
+  <section class="part" id="class">
+    <div class="part-head">
+      <span class="num">1</span>
+      <h2>Every line we tried</h2>
+      <p>The search in Lesson 1 tried every slope from 0.80 to 1.20 (in steps of 0.01) with every intercept from −30 to 30 cm: <b>2,501 lines</b>. Each dot is one of them. With our class data the low ground is a long, narrow trench: tilt the line a bit more and start it a bit lower, and it is almost as good.</p>
+    </div>
+    <div class="controls">
+      <label class="check"><input type="checkbox" id="dots-class" checked> Show the 2,501 lines tried</label>
+      <span class="read" id="read-class"></span>
+    </div>
+    <div class="grid">
+      <div class="panel">
+        <h3>The landscape</h3>
+        <p class="hint">Drag to turn it. Scroll or pinch to zoom.</p>
+        <div class="plot" id="class-3d" aria-label="3D surface of the error score for every line in the Lesson 1 search"></div>
+      </div>
+      <div class="panel">
+        <h3>The same landscape as a map, from above</h3>
+        <p class="hint">Each contour line joins lines with the same error score, like heights on a walking map. The colours use a squashed scale so the valley floor shows.</p>
+        <div class="plot" id="class-map" aria-label="Contour map of the error score for every line in the Lesson 1 search"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="part" id="bowl">
+    <div class="part-head">
+      <span class="num">2</span>
+      <h2>The idea: a bowl</h2>
+      <p>A made-up landscape that shows the idea cleanly: one <b>lowest point</b>, and contour rings around it. On the map, the closer the rings, the steeper the ground. Every ring is a set of lines that are all equally good.</p>
+    </div>
+    <div class="grid">
+      <div class="panel">
+        <h3>The landscape</h3>
+        <p class="hint">Drag to turn it.</p>
+        <div class="plot" id="bowl-3d" aria-label="3D surface of a simple bowl with one lowest point"></div>
+      </div>
+      <div class="panel">
+        <h3>The same bowl as a map</h3>
+        <p class="hint">The star is the lowest point. Nothing on the map is lower.</p>
+        <div class="plot" id="bowl-map" aria-label="Contour map of a simple bowl with the lowest point marked"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="part" id="minima">
+    <div class="part-head">
+      <span class="num">3</span>
+      <h2>Local and global minima</h2>
+      <p>Real error landscapes can have more than one dip. The <b>global minimum</b> is the lowest point of all. A <b>local minimum</b> is lower than everything right around it, but not the lowest. Searching every point always finds the global minimum. Walking downhill (Lesson 2) can get stuck in a local one.</p>
+    </div>
+    <div class="legend"><span class="g">★ global minimum</span><span class="l">● local minimum</span></div>
+    <div class="grid one">
+      <div class="panel">
+        <h3>With one number</h3>
+        <p class="hint">A slice through a landscape: change one number in the model and watch the error.</p>
+        <div class="plot short" id="minima-1d" aria-label="A curve with two local minima and one global minimum"></div>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="panel">
+        <h3>With two numbers</h3>
+        <p class="hint">Drag to turn it. Two dips: one deep, one shallow.</p>
+        <div class="plot" id="two-3d" aria-label="3D surface with a deep valley and a shallow valley"></div>
+      </div>
+      <div class="panel">
+        <h3>The same landscape as a map</h3>
+        <p class="hint">Two sets of rings. Only one of them surrounds the lowest point.</p>
+        <div class="plot" id="two-map" aria-label="Contour map with a global minimum and a local minimum marked"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="part" id="more">
+    <div class="part-head">
+      <span class="num">4</span>
+      <h2>More than two numbers</h2>
+      <p>With a third number we run out of directions to draw the height in. But the map still works: every point in this box is one model (three numbers), and the shells join models with the same error score, like the rings on the map, now nested like the layers of an onion. The best model sits in the middle. Real AIs have <b>billions</b> of numbers. Nobody can picture that, but the job is the same: find the lowest point.</p>
+    </div>
+    <div class="grid one">
+      <div class="panel">
+        <h3>Three numbers: shells of equal error</h3>
+        <p class="hint">Cut in half so you can see inside. Drag to turn it. Inner shell: small error. Outer shell: big error.</p>
+        <div class="plot" id="shells" aria-label="Three nested shells of equal error around the best model in a box of three numbers"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+<script>
+(function () {
+  if (!window.Plotly) { document.getElementById("load-error").hidden = false; return; }
+
+  // ---------- data and landscapes ----------
+  // Lesson 1's example class: [height, arm span] in cm
+  const DATA = [[152,150],[155,157],[158,155],[160,163],[161,158],[163,166],[164,162],[165,169],[167,165],[168,171],[169,167],[170,174],
+    [171,170],[172,169],[173,177],[175,173],[176,180],[177,175],[178,182],[180,178],[181,185],[183,181],[185,189],[188,186]];
+  // the Lesson 1 search grid: m from 0.80 to 1.20 in steps of 0.01, c from -30 to 30 in steps of 1
+  const MS = Array.from({ length: 41 }, (_, i) => (80 + i) / 100);
+  const CS = Array.from({ length: 61 }, (_, i) => i - 30);
+  const classErr = (m, c) => DATA.reduce((t, [h, s]) => t + (m * h + c - s) ** 2, 0) / DATA.length;
+  const bowl = (m, c) => { const u = (m - 1.02) / 0.2, v = (c + 3) / 30; return 8 + 400 * (u * u + v * v + 0.7 * u * v); };
+  const two = (m, c) => {
+    const u = (m - 1) / 0.2, v = c / 30;
+    return 40 + 20 * (u * u + v * v) - 28 * Math.exp(-((u + 0.45) ** 2 + (v - 0.35) ** 2) / 0.045) - 40 * Math.exp(-((u - 0.5) ** 2 + (v + 0.4) ** 2) / 0.07);
+  };
+  const LOCAL = { m: 0.91, c: 10 }; // the grid point at the bottom of the shallow valley
+
+  // ---------- look ----------
+  const SCALE = [[0, "#fff8d6"], [0.25, "#f5c518"], [0.55, "#7d7be6"], [0.8, "#3f3bd9"], [1, "#18213a"]];
+  const INK = "#18213a", RED = "#d9363e", AMBER = "#e0a400", AMBER_TEXT = "#9a6b00", ACCENT = "#3f3bd9", GRID = "#dfe5ef";
+  const FONT = { family: "Atkinson Hyperlegible, system-ui, sans-serif", color: INK, size: 14 };
+  const CONFIG = { responsive: true, displaylogo: false, modeBarButtonsToRemove: ["toImage", "lasso2d", "select2d", "resetCameraLastSave3d"] };
+
+  function grid(f) {
+    const z = CS.map((c) => MS.map((m) => f(m, c))); // rows follow c, columns follow m
+    let best = { e: Infinity };
+    CS.forEach((c, i) => MS.forEach((m, j) => { if (z[i][j] < best.e) best = { m, c, e: z[i][j] }; }));
+    const pts = { m: [], c: [], e: [] };
+    CS.forEach((c, i) => MS.forEach((m, j) => { pts.m.push(m); pts.c.push(c); pts.e.push(z[i][j]); }));
+    return { z, best, pts };
+  }
+  const star3d = (p, colour, symbol) => ({
+    type: "scatter3d", mode: "markers", x: [p.m], y: [p.c], z: [p.e],
+    marker: { size: 9, color: colour, symbol, line: { color: "#fff", width: 2 } }, hoverinfo: "skip", showlegend: false,
+  });
+  const note = (x, y, text, colour, ax = 60, ay = -40) => ({
+    x, y, text: `<b>${text}</b>`, ax, ay, showarrow: true, arrowhead: 0, arrowwidth: 1.5, arrowcolor: colour,
+    font: { color: colour, size: 15, family: FONT.family }, bgcolor: "rgba(255,255,255,0.92)", borderpad: 4,
+  });
+  const scene = (zTitle, showZ, eye, zAspect) => ({
+    xaxis: { title: { text: "slope m" }, gridcolor: GRID, zeroline: false, dtick: 0.1 },
+    yaxis: { title: { text: "intercept c (cm)" }, gridcolor: GRID, zeroline: false, dtick: 10 },
+    zaxis: { title: { text: zTitle }, gridcolor: GRID, showticklabels: showZ },
+    aspectmode: "manual", aspectratio: { x: 1, y: 1, z: zAspect }, camera: { eye },
+  });
+  const mapLayout = (notes, colourbar) => ({
+    annotations: notes, margin: { l: 64, r: 10, t: 10, b: 52 }, font: FONT, paper_bgcolor: "#ffffff", plot_bgcolor: "#ffffff",
+    xaxis: { title: { text: "slope m" }, dtick: 0.05, showgrid: false, zeroline: false, linecolor: "#c6cfde", mirror: true },
+    yaxis: { title: { text: "intercept c (cm)" }, dtick: 10, showgrid: false, zeroline: false, linecolor: "#c6cfde", mirror: true },
+  });
+  const dotTrace3d = (pts) => ({ type: "scatter3d", mode: "markers", x: pts.m, y: pts.c, z: pts.e, marker: { size: 1.5, color: INK, opacity: 0.4 }, hoverinfo: "skip", showlegend: false });
+  const dotTrace2d = (pts) => ({ type: "scatter", mode: "markers", x: pts.m, y: pts.c, marker: { size: 2.6, color: INK, opacity: 0.35 }, hoverinfo: "skip", showlegend: false });
+  const surfaceLook = { lighting: { ambient: 0.8, diffuse: 0.45, specular: 0.05 }, contours: { z: { show: false } } };
+
+  // ---------- 1. every line we tried ----------
+  const cls = grid(classErr);
+  const logZ = cls.z.map((r) => r.map((v) => Math.log10(v))); // 8 to 4,000: colour on a log scale so the valley floor shows
+  const TICKS = [8, 25, 100, 400, 1600];
+  const logBar = { title: { text: "error score (cm²)", side: "right" }, tickvals: TICKS.map(Math.log10), ticktext: TICKS.map(String), thickness: 14, outlinewidth: 0 };
+  const clsHover = "m = %{x:.2f}<br>c = %{y:.0f} cm<br>error %{customdata:.2f} cm²<extra></extra>";
+  function drawClass() {
+    const dots = document.getElementById("dots-class").checked;
+    const s = [{ type: "surface", x: MS, y: CS, z: cls.z, surfacecolor: logZ, customdata: cls.z, colorscale: SCALE, showscale: false, hovertemplate: clsHover, ...surfaceLook },
+      star3d(cls.best, RED, "diamond")];
+    if (dots) s.push(dotTrace3d(cls.pts));
+    Plotly.react("class-3d", s, { margin: { l: 0, r: 0, t: 0, b: 0 }, font: FONT, paper_bgcolor: "#ffffff",
+      scene: scene("error (cm²)", true, { x: 1.75, y: -1.35, z: 0.8 }, 0.7) }, CONFIG);
+    const mp = [{ type: "contour", x: MS, y: CS, z: logZ, customdata: cls.z, colorscale: SCALE, colorbar: logBar, hovertemplate: clsHover,
+      contours: { coloring: "fill", showlines: true }, line: { color: "rgba(255,255,255,0.9)", width: 1.2 }, ncontours: 14 }];
+    if (dots) mp.push(dotTrace2d(cls.pts));
+    mp.push({ type: "scatter", mode: "markers", x: [cls.best.m], y: [cls.best.c], marker: { size: 18, color: RED, symbol: "star", line: { color: "#fff", width: 1.5 } }, hoverinfo: "skip", showlegend: false });
+    Plotly.react("class-map", mp, mapLayout([note(cls.best.m, cls.best.c, `lowest: ${cls.best.e.toFixed(2)}`, RED)]), CONFIG);
+  }
+  document.getElementById("read-class").textContent = `Lowest of the 2,501: m = ${cls.best.m.toFixed(2)}, c = ${cls.best.c}, error ${cls.best.e.toFixed(2)} cm²`;
+  document.getElementById("dots-class").addEventListener("change", drawClass);
+  drawClass();
+
+  // ---------- 2. the bowl ----------
+  const bw = grid(bowl);
+  const plainBar = { title: { text: "error score", side: "right" }, showticklabels: false, thickness: 14, outlinewidth: 0 };
+  const plainHover = "m = %{x:.2f}<br>c = %{y:.0f} cm<extra></extra>";
+  Plotly.newPlot("bowl-3d", [
+    { type: "surface", x: MS, y: CS, z: bw.z, colorscale: SCALE, showscale: false, hovertemplate: plainHover, ...surfaceLook },
+    star3d(bw.best, RED, "diamond"),
+  ], { margin: { l: 0, r: 0, t: 0, b: 0 }, font: FONT, paper_bgcolor: "#ffffff", scene: scene("error", false, { x: 1.55, y: -1.45, z: 1.3 }, 0.8) }, CONFIG);
+  Plotly.newPlot("bowl-map", [
+    { type: "contour", x: MS, y: CS, z: bw.z, colorscale: SCALE, colorbar: plainBar, hovertemplate: plainHover,
+      contours: { coloring: "fill", showlines: true }, line: { color: "rgba(255,255,255,0.9)", width: 1.2 }, ncontours: 12 },
+    { type: "scatter", mode: "markers", x: [bw.best.m], y: [bw.best.c], marker: { size: 18, color: RED, symbol: "star", line: { color: "#fff", width: 1.5 } }, hoverinfo: "skip", showlegend: false },
+  ], mapLayout([note(bw.best.m, bw.best.c, "lowest point", RED)]), CONFIG);
+
+  // ---------- 3. local and global minima ----------
+  const f1 = (x) => 3.2 + 0.07 * (x - 5) ** 2 - 1.5 * Math.exp(-((x - 1.9) ** 2) / 0.45) - 2.7 * Math.exp(-((x - 6.0) ** 2) / 0.55) - 1.3 * Math.exp(-((x - 8.7) ** 2) / 0.25);
+  const xs = Array.from({ length: 401 }, (_, i) => i / 40);
+  const lows = [];
+  for (let i = 1; i < xs.length - 1; i++) if (f1(xs[i]) < f1(xs[i - 1]) && f1(xs[i]) < f1(xs[i + 1])) lows.push({ x: xs[i], y: f1(xs[i]) });
+  const glob = lows.reduce((a, b) => (b.y < a.y ? b : a));
+  const locs = lows.filter((p) => p !== glob);
+  Plotly.newPlot("minima-1d", [
+    { type: "scatter", mode: "lines", x: xs, y: xs.map(f1), line: { color: ACCENT, width: 4 }, fill: "tozeroy", fillcolor: "rgba(63,59,217,0.08)", hoverinfo: "skip", showlegend: false },
+    { type: "scatter", mode: "markers", x: locs.map((p) => p.x), y: locs.map((p) => p.y), marker: { size: 15, color: AMBER, line: { color: "#fff", width: 2 } }, hoverinfo: "skip", showlegend: false },
+    { type: "scatter", mode: "markers", x: [glob.x], y: [glob.y], marker: { size: 20, color: RED, symbol: "star", line: { color: "#fff", width: 1.5 } }, hoverinfo: "skip", showlegend: false },
+  ], {
+    margin: { l: 56, r: 16, t: 10, b: 48 }, font: FONT, paper_bgcolor: "#ffffff", plot_bgcolor: "#ffffff",
+    xaxis: { title: { text: "a number in the model" }, showticklabels: false, showgrid: false, zeroline: false, linecolor: INK, range: [0, 10] },
+    yaxis: { title: { text: "error score" }, showticklabels: false, showgrid: false, zeroline: false, linecolor: INK, range: [0, 4.4] },
+    annotations: [note(glob.x, glob.y, "global minimum", RED, 80, 10), ...locs.map((p) => note(p.x, p.y, "local minimum", AMBER_TEXT, 0, 40))],
+  }, { ...CONFIG, staticPlot: false, scrollZoom: false });
+
+  const tw = grid(two);
+  const localPt = { m: LOCAL.m, c: LOCAL.c, e: two(LOCAL.m, LOCAL.c) };
+  Plotly.newPlot("two-3d", [
+    { type: "surface", x: MS, y: CS, z: tw.z, colorscale: SCALE, showscale: false, hovertemplate: plainHover, ...surfaceLook },
+    star3d(tw.best, RED, "diamond"), star3d(localPt, AMBER, "circle"),
+  ], { margin: { l: 0, r: 0, t: 0, b: 0 }, font: FONT, paper_bgcolor: "#ffffff", scene: scene("error", false, { x: -1.3, y: -1.5, z: 1.3 }, 1.0) }, CONFIG);
+  Plotly.newPlot("two-map", [
+    { type: "contour", x: MS, y: CS, z: tw.z, colorscale: SCALE, colorbar: plainBar, hovertemplate: plainHover,
+      contours: { coloring: "fill", showlines: true }, line: { color: "rgba(255,255,255,0.9)", width: 1.2 }, ncontours: 16 },
+    { type: "scatter", mode: "markers", x: [LOCAL.m], y: [LOCAL.c], marker: { size: 14, color: AMBER, line: { color: "#fff", width: 1.5 } }, hoverinfo: "skip", showlegend: false },
+    { type: "scatter", mode: "markers", x: [tw.best.m], y: [tw.best.c], marker: { size: 18, color: RED, symbol: "star", line: { color: "#fff", width: 1.5 } }, hoverinfo: "skip", showlegend: false },
+  ], mapLayout([note(tw.best.m, tw.best.c, "global minimum", RED), note(LOCAL.m, LOCAL.c, "local minimum", AMBER_TEXT)]), CONFIG);
+
+  // ---------- 4. three numbers: shells of equal error ----------
+  // number 1 only runs from -1 to 0: the shells are cut in half so the inner ones show
+  const N = 28, ax = Array.from({ length: N }, (_, i) => -1 + (2 * i) / (N - 1));
+  const half = Array.from({ length: 15 }, (_, i) => -1 + i / 14);
+  const vx = [], vy = [], vz = [], val = [];
+  half.forEach((a) => ax.forEach((b) => ax.forEach((c) => {
+    vx.push(a); vy.push(b); vz.push(c);
+    val.push(a * a + 1.4 * b * b + 0.8 * c * c + 0.5 * a * b); // a tilted bowl in three numbers
+  })));
+  Plotly.newPlot("shells", [
+    ...[[0.1, "#f5c518", 0.85], [0.3, "#7d7be6", 0.45], [0.55, "#3f3bd9", 0.25]].map(([lvl, colour, op]) => ({
+      type: "isosurface", x: vx, y: vy, z: vz, value: val, isomin: lvl, isomax: lvl, surface: { count: 1 },
+      colorscale: [[0, colour], [1, colour]], opacity: op, caps: { x: { show: false }, y: { show: false }, z: { show: false } },
+      showscale: false, hoverinfo: "skip", lighting: { ambient: 0.85, diffuse: 0.4 },
+    })),
+    { type: "scatter3d", mode: "markers", x: [0], y: [0], z: [0], marker: { size: 8, color: RED, symbol: "diamond", line: { color: "#fff", width: 2 } }, hoverinfo: "skip", showlegend: false },
+  ], {
+    margin: { l: 0, r: 0, t: 0, b: 0 }, font: FONT, paper_bgcolor: "#ffffff",
+    scene: {
+      xaxis: { title: { text: "number 1" }, showticklabels: false, gridcolor: GRID, zeroline: false, range: [-1, 1] },
+      yaxis: { title: { text: "number 2" }, showticklabels: false, gridcolor: GRID, zeroline: false },
+      zaxis: { title: { text: "number 3" }, showticklabels: false, gridcolor: GRID, zeroline: false },
+      aspectmode: "cube", camera: { eye: { x: 1.7, y: -1.15, z: 1.0 } },
+    },
+  }, CONFIG);
+})();
+</script>
+</body>
+</html>
