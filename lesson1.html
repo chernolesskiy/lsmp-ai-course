@@ -1,0 +1,2159 @@
+<!doctype html>
+<html lang="en" data-lesson="lesson1">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1: Be the machine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #f6f8fc;
+  --card: #ffffff;
+  --ink: #18213a;
+  --muted: #5b6680;
+  --grid: #dfe5ef;
+  --line: #c6cfde;
+  --accent: #3f3bd9;
+  --accent-soft: #e9e8fd;
+  --marker: #f5c518;
+  --marker-soft: #fff4c2;
+  --red: #d9363e;
+  --green: #1d9467;
+  --code-bg: #151b2d;
+  --code-ink: #e3e8f5;
+  --out-bg: #0e1322;
+  --radius: 10px;
+  --font: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 17px;
+  line-height: 1.5;
+}
+a { color: var(--accent); }
+.page { max-width: 1040px; margin: 0 auto; padding: 0 20px 96px; }
+
+/* Header */
+.lesson-head {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
+  padding: 32px 0 18px; border-bottom: 3px solid var(--ink); flex-wrap: wrap;
+}
+.lesson-head .titles { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
+.lesson-num {
+  font-size: 3.4rem; line-height: 0.9; font-weight: 700; color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.lesson-head h1 { margin: 0; font-size: 2rem; line-height: 1.1; letter-spacing: -0.01em; }
+.lesson-head .home { font-size: 0.95rem; color: var(--muted); text-decoration: none; display: block; margin-bottom: 4px; }
+.lesson-head .home:hover { color: var(--accent); }
+
+.py-status {
+  display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem;
+  padding: 6px 12px; border-radius: 999px; background: var(--card); border: 1px solid var(--line);
+  white-space: nowrap;
+}
+.py-status::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--marker); }
+.py-status[data-state="ready"]::before { background: var(--green); }
+.py-status[data-state="error"]::before { background: var(--red); }
+.py-status[data-state="loading"]::before { animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.25; } }
+
+/* Activities */
+.activity { margin-top: 44px; counter-increment: activity; }
+.activity > h2 {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 1.35rem; margin: 0 0 6px; line-height: 1.25;
+}
+.activity > h2::before {
+  content: counter(activity);
+  flex: none; display: inline-grid; place-items: center;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--ink); color: #fff; font-size: 1rem;
+}
+.activity.extra > h2::before { content: "+"; background: var(--accent); }
+body { counter-reset: activity; }
+.task { margin: 0 0 12px 44px; color: var(--muted); max-width: 72ch; }
+.task b { color: var(--ink); font-weight: 700; }
+.activity > :not(h2):not(.task) { margin-left: 44px; }
+@media (max-width: 700px) {
+  .activity > :not(h2):not(.task), .task { margin-left: 0; }
+}
+
+.panel {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px; margin-bottom: 14px;
+}
+.split { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; align-items: start; }
+.split.wide-side { grid-template-columns: minmax(0, 1fr) 320px; }
+@media (max-width: 820px) { .split, .split.wide-side { grid-template-columns: 1fr; } }
+
+canvas.plot { width: 100%; display: block; touch-action: none; border-radius: 6px; }
+
+/* Readouts and controls */
+.readouts { display: grid; gap: 10px; }
+.readout { border: 1px solid var(--grid); border-radius: 8px; padding: 8px 12px; }
+.readout .k { font-size: 0.85rem; color: var(--muted); }
+.readout .v { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.readout.score { background: var(--marker-soft); border-color: var(--marker); }
+.readout.good { background: #e3f6ee; border-color: var(--green); }
+.readout.bad { background: #fde8e9; border-color: var(--red); }
+
+.controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin-top: 12px; }
+.control { display: grid; gap: 2px; min-width: 150px; }
+.control label, .control .lbl { font-size: 0.85rem; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+.control output { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+select, input[type="number"], input[type="text"] {
+  font: inherit; font-size: 0.95rem; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px;
+  background: #fff; color: var(--ink);
+}
+input[type="number"] { width: 84px; font-variant-numeric: tabular-nums; }
+
+.btn {
+  font: inherit; font-size: 0.95rem; font-weight: 700; cursor: pointer;
+  padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line);
+  background: #fff; color: var(--ink);
+}
+.btn:hover { border-color: var(--ink); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { background: #2f2bc0; }
+.btn.small { padding: 4px 10px; font-size: 0.85rem; }
+.btn:disabled { opacity: 0.5; cursor: default; }
+:focus-visible { outline: 3px solid var(--marker); outline-offset: 2px; }
+
+.toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 0.95rem; cursor: pointer; }
+.toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+.note { font-size: 0.9rem; color: var(--muted); margin: 8px 0 0; }
+.flash { font-weight: 700; color: var(--green); }
+
+/* Tables */
+table.data { border-collapse: collapse; font-variant-numeric: tabular-nums; width: 100%; }
+table.data th, table.data td { padding: 5px 8px; border-bottom: 1px solid var(--grid); text-align: left; }
+table.data th { font-size: 0.85rem; color: var(--muted); font-weight: 400; }
+table.data td.ok { color: var(--green); font-weight: 700; }
+table.data td.no { color: var(--red); font-weight: 700; }
+
+/* Code cells */
+.cell { background: var(--code-bg); border-radius: var(--radius); margin: 0 0 16px; overflow: hidden; border: 1px solid #0b0f1c; }
+.cell-bar {
+  display: flex; align-items: center; gap: 8px; padding: 7px 8px 7px 14px;
+  background: #1d2440; color: #aab3cc; font-size: 0.85rem;
+}
+.cell-bar .cell-title { flex: 1; color: #e3e8f5; font-weight: 700; font-size: 0.92rem; }
+.cell-bar .hint { font-size: 0.78rem; color: #7f89a6; }
+.cell-bar .btn { background: transparent; color: #c9d1e8; border-color: #3a4366; padding: 4px 10px; font-size: 0.85rem; }
+.cell-bar .btn:hover { border-color: #c9d1e8; }
+.cell-bar .btn.run { background: var(--marker); color: #18213a; border-color: var(--marker); }
+.cell-bar .btn.run:hover { background: #ffd84a; }
+.cell.running .cell-bar .btn.run { opacity: 0.6; }
+.cell.running .cell-bar { background: #2a2f63; }
+
+.editor { display: flex; font-family: var(--mono); font-size: 14px; line-height: 1.55; }
+.editor .gutter {
+  flex: none; min-width: 2.9em; padding: 12px 10px 12px 6px; text-align: right;
+  color: #59638a; background: #121828; border-right: 1px solid #262d47;
+  white-space: pre; user-select: none; font: inherit; line-height: inherit;
+}
+.editor .code-scroll { flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; }
+.editor .code-inner { position: relative; width: max-content; min-width: 100%; }
+.editor pre, .editor textarea {
+  margin: 0; padding: 12px 16px; border: 0;
+  font: inherit; line-height: inherit; letter-spacing: 0;
+  white-space: pre; overflow-wrap: normal; word-break: normal;
+  tab-size: 4; -moz-tab-size: 4;
+}
+.editor pre { color: var(--code-ink); min-height: 2.6em; pointer-events: none; }
+.editor textarea {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  background: transparent; color: transparent; caret-color: #fff;
+  resize: none; overflow: hidden; outline: none;
+}
+.editor textarea::selection { background: rgba(120, 140, 255, 0.35); color: transparent; }
+.editor:focus-within .gutter { box-shadow: inset -3px 0 0 var(--marker); }
+.t-kw { color: #c792ea; }
+.t-bi { color: #82aaff; }
+.t-fn { color: #7fdbca; }
+.t-str { color: #c3e88d; }
+.t-num { color: #f78c6c; }
+.t-com { color: #7a85a3; font-style: italic; }
+
+.out {
+  margin: 0; padding: 10px 16px; background: var(--out-bg); color: #d7deef;
+  font-family: var(--mono); font-size: 13.5px; line-height: 1.5;
+  white-space: pre-wrap; overflow-wrap: anywhere; max-height: 340px; overflow: auto;
+  border-top: 1px solid #262d47;
+}
+.out:empty { display: none; }
+.out .err { color: #ff9b9b; }
+.out .err-help { display: block; margin-top: 6px; color: #ffd27a; font-family: var(--font); font-size: 0.95rem; }
+.out .info { color: #8f9abb; }
+
+/* Task checklist under a cell */
+.checks { list-style: none; margin: 0; padding: 8px 14px 10px; background: #f1f3fb; border-top: 1px solid #0b0f1c; display: grid; gap: 5px; }
+.checks li { display: grid; grid-template-columns: 22px 1fr; gap: 2px 8px; align-items: start; font-size: 0.95rem; color: var(--ink); }
+.checks .mark {
+  width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line); background: #fff;
+  display: inline-grid; place-items: center; font-size: 0.8rem; font-weight: 700; margin-top: 2px;
+}
+.checks li.done .mark { background: var(--green); border-color: var(--green); color: #fff; }
+.checks li.done .label { color: var(--muted); }
+.checks .check-hint { grid-column: 2; font-size: 0.88rem; color: #8a5a00; }
+
+/* Hints students can open */
+details.hint { margin: 0 0 14px 44px; max-width: 72ch; }
+details.hint summary { cursor: pointer; color: var(--accent); font-weight: 700; font-size: 0.95rem; width: fit-content; }
+details.hint[open] summary { margin-bottom: 6px; }
+details.hint > div { background: var(--marker-soft); border-left: 3px solid var(--marker); padding: 8px 12px; border-radius: 0 8px 8px 0; font-size: 0.95rem; }
+details.hint code, .task code, .card code { font-family: var(--mono); font-size: 0.88em; background: rgba(24, 33, 58, 0.07); padding: 1px 4px; border-radius: 4px; }
+@media (max-width: 700px) { details.hint { margin-left: 0; } }
+
+/* Header pills */
+.head-pills { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.progress-pill {
+  font-size: 0.9rem; padding: 6px 12px; border-radius: 999px; background: var(--ink); color: #fff;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.progress-pill[data-complete="yes"] { background: var(--green); }
+
+/* Key words */
+.keywords { margin: 18px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px 18px; }
+.keywords div { border-left: 3px solid var(--accent); padding: 2px 0 2px 10px; }
+.keywords dt { font-weight: 700; }
+.keywords dd { margin: 0; color: var(--muted); font-size: 0.9rem; line-height: 1.35; }
+
+/* Quiz */
+.quiz { display: grid; gap: 14px; }
+.quiz-q { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px 14px 56px; }
+.quiz-q > p:first-of-type { margin: 0 0 10px; font-weight: 700; }
+.quiz-num { position: absolute; left: 16px; top: 14px; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-weight: 700; }
+.quiz-opts { display: grid; gap: 6px; }
+.quiz-opt { font: inherit; text-align: left; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); cursor: pointer; }
+.quiz-opt:hover:not(:disabled) { border-color: var(--accent); }
+.quiz-opt.right { background: #e3f6ee; border-color: var(--green); font-weight: 700; }
+.quiz-opt.wrong { background: #fde8e9; border-color: var(--red); text-decoration: line-through; color: var(--muted); }
+.quiz-opt:disabled { cursor: default; }
+.quiz-q .why { margin: 10px 0 0; padding: 8px 12px; background: #e3f6ee; border-radius: 8px; font-size: 0.95rem; }
+
+/* Teacher mode */
+.teacher-bar {
+  position: sticky; top: 0; z-index: 10; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  padding: 8px 20px; background: var(--marker); color: var(--ink); font-size: 0.95rem;
+}
+.teacher-bar span { flex: 1; }
+.cell-bar .btn.solution { border-color: var(--marker); color: var(--marker); }
+
+.footer-tools { margin-top: 8px; }
+.linkish { font: inherit; font-size: 0.8rem; background: none; border: 0; padding: 0; color: var(--muted); text-decoration: underline; cursor: pointer; }
+
+/* Cards */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+.card h3 { margin: 0 0 6px; font-size: 1.1rem; }
+.card p { margin: 0 0 10px; }
+.card .q { border-top: 1px solid var(--grid); padding-top: 8px; font-size: 0.95rem; color: var(--muted); }
+
+footer.credits { margin-top: 64px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 0.8rem; color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before { animation: none !important; transition: none !important; }
+}
+.activity.extra { counter-increment: none; }
+
+.cell-note { margin: 0; padding: 8px 12px; font-size: 0.9rem; background: var(--marker-soft); border-top: 1px solid var(--line); color: var(--ink); }
+.cell-note .linkish { margin-left: 4px; font-size: 0.9rem; color: var(--accent); font-weight: 700; }
+
+</style>
+</head>
+<body>
+<div class="page">
+<header class="lesson-head">
+  <div>
+    <a class="home" href="index.html">How Machines Learn</a>
+    <div class="titles"><span class="lesson-num">1</span><h1>Be the machine</h1></div>
+  </div>
+  <span class="py-status" data-state="loading" role="status">Loading Python…</span>
+</header>
+<style>
+details.share { margin-top: 12px; }
+details.share summary { cursor: pointer; color: var(--accent); font-weight: 700; font-size: 0.95rem; width: fit-content; }
+.share-body { margin-top: 8px; }
+.share-body .lbl { font-size: 0.85rem; color: var(--muted); display: block; margin-bottom: 4px; }
+.share-body textarea { width: 100%; font: inherit; font-size: 0.95rem; padding: 8px; border: 1px solid var(--line); border-radius: 8px; resize: vertical; }
+</style>
+<dl class="keywords">
+  <div><dt>Data</dt><dd>Examples we have measured or collected.</dd></div>
+  <div><dt>Model</dt><dd>A rule, learned from data, that makes predictions.</dd></div>
+  <div><dt>Prediction</dt><dd>The model's answer for a new example.</dd></div>
+  <div><dt>Error score</dt><dd>How wrong the model is on average. Lower is better.</dd></div>
+</dl>
+
+<section class="activity">
+  <h2>Our class data</h2>
+  <p class="task">Measure each other's <b>height</b> and <b>arm span</b> (fingertip to fingertip) in centimetres and add everyone to the table.</p>
+  <div class="panel split">
+    <div>
+      <div style="max-height: 340px; overflow: auto">
+        <table class="data" id="data-table">
+          <thead><tr><th>#</th><th>Height (cm)</th><th>Arm span (cm)</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="controls">
+        <button class="btn primary" id="add-row" type="button">Add a student</button>
+        <button class="btn" id="use-example" type="button">Use example data</button>
+        <button class="btn" id="clear-table" type="button">Clear the table</button>
+      </div>
+      <details class="share">
+        <summary>Paste a list, or share the table</summary>
+        <div class="share-body">
+          <label class="lbl" for="paste-box">Paste one student per line: height, then arm span.</label>
+          <textarea id="paste-box" rows="4" placeholder="165 168&#10;172 170&#10;158 161"></textarea>
+          <div class="controls">
+            <button class="btn" id="paste-add" type="button">Add these to the table</button>
+            <button class="btn" id="share-link" type="button">Copy a link to this table</button>
+          </div>
+          <p class="note" id="share-msg" aria-live="polite"></p>
+        </div>
+      </details>
+    </div>
+    <div class="readouts">
+      <div class="readout"><div class="k">Students</div><div class="v" id="n-students">0</div></div>
+      <div class="readout"><div class="k">Average height</div><div class="v" id="avg-h">–</div></div>
+      <div class="readout"><div class="k">Average arm span</div><div class="v" id="avg-s">–</div></div>
+      <div class="readout"><div class="k">Arm span longer than height</div><div class="v" id="n-wider">–</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="activity">
+  <h2>Fit a line by hand</h2>
+  <p class="task">Drag the round handles, or drag the line itself. Get the <b>lowest error score</b> you can. Then switch on the squares: the error score is their average size.</p>
+  <div class="panel split">
+    <canvas class="plot" id="fit-plot" aria-label="Scatter plot of height against arm span with a line you can drag"></canvas>
+    <div>
+      <div class="readouts">
+        <div class="readout score"><div class="k">Error score</div><div class="v" id="err">–</div></div>
+        <div class="readout"><div class="k">Your best score</div><div class="v" id="best">–</div></div>
+        <div class="readout"><div class="k">Slope m</div><div class="v" id="m-out">–</div></div>
+        <div class="readout"><div class="k">Intercept c</div><div class="v" id="c-out">–</div></div>
+      </div>
+      <div class="controls" style="display: grid; gap: 6px">
+        <label class="toggle"><input type="checkbox" id="show-miss"> Show the misses</label>
+        <label class="toggle"><input type="checkbox" id="show-sq"> Show the squared misses</label>
+        <label class="toggle"><input type="checkbox" id="show-best"> Show the best possible line</label>
+        <button class="btn small" id="reset-line" type="button" style="justify-self: start">Reset line</button>
+      </div>
+      <p class="note" id="line-source"></p>
+    </div>
+  </div>
+</section>
+
+<section class="activity">
+  <h2>Look at the data in Python</h2>
+  <p class="task">About 2,000 years ago the Roman architect Vitruvius wrote that a person's arm span is <b>the same as their height</b>. Leonardo da Vinci believed him and drew the famous <i>Vitruvian Man</i>. Nobody in Rome had your data. Let's test the rule.</p>
+  <p class="task"><code>heights</code> and <code>spans</code> always hold what is in the table. Run the cell, then do tasks 1 to 3. Tasks 4 to 6 dig deeper if you finish early. The ticks below the cell show what you have finished.</p>
+  <details class="hint"><summary>Hint for task 3</summary><div>Go through the students in pairs with <code>for h, s in zip(heights, spans):</code> and add 1 to a counter when <code>s &gt; h</code>.</div></details>
+  <details class="hint"><summary>Hint for tasks 4 to 6</summary><div>Task 4: <code>min(heights)</code>. Task 5: start with <code>diffs = []</code>, then in the loop <code>diffs.append(s - h)</code>. Task 6: <code>abs(-7)</code> is 7, so look for the biggest <code>abs(d)</code> for <code>d</code> in <code>diffs</code>.</div></details>
+<script type="text/x-python" data-cell="look" data-title="Was Vitruvius right?">
+# heights and spans are lists of numbers (cm), one per student
+print("Number of students:", len(heights))
+print("Heights:", heights)
+print("Arm spans:", spans)
+
+average_height = sum(heights) / len(heights)
+print("Average height:", round(average_height, 1), "cm")
+
+# Vitruvius says: arm span = height. Let's test him.
+# Task 1: work out the average arm span, store it in average_span and print it.
+#         Is it close to the average height?
+# Task 2: store the height of the tallest student in tallest (hint: max)
+# Task 3: count the students whose arm span is longer than their height.
+#         Store the count in wider and print it. Was the class's guess right?
+
+# Dig deeper (if you finish early):
+# Task 4: how spread out is the class? Store the shortest height in shortest,
+#         and tallest - shortest in height_range.
+# Task 5: make a list called diffs: arm span minus height, for every student.
+#         If Vitruvius were exactly right, every number would be 0. Is it?
+# Task 6: store the biggest difference, ignoring + or -, in biggest_diff.
+#         Is that person really unusual, or was it a measuring mistake?
+#         How could you find out?
+</script>
+<script type="text/x-python" data-check="look">
+def _ok(f):
+    try:
+        return bool(f())
+    except Exception:
+        return False
+check("Task 1: average arm span",
+      defined("average_span") and _ok(lambda: close(average_span, sum(spans) / len(spans))),
+      "Make a variable called average_span: add up spans and divide by how many there are.")
+check("Task 2: tallest student",
+      defined("tallest") and _ok(lambda: tallest == max(heights)),
+      "tallest = max(heights)")
+check("Task 3: arm span longer than height",
+      defined("wider") and _ok(lambda: wider == sum(1 for h, s in zip(heights, spans) if s > h)),
+      "Start with wider = 0, then loop through the students and add 1 when the span is bigger.")
+check("Task 4 (deeper): shortest and range",
+      defined("shortest", "height_range") and _ok(lambda: shortest == min(heights) and close(height_range, max(heights) - min(heights))),
+      "shortest = min(heights), then height_range = tallest - shortest.")
+check("Task 5 (deeper): list of differences",
+      defined("diffs") and _ok(lambda: len(diffs) == len(heights) and all(close(d, s - h) for d, h, s in zip(diffs, heights, spans))),
+      "One number per student, in the same order as the table: span minus height.")
+check("Task 6 (deeper): biggest difference",
+      defined("biggest_diff") and _ok(lambda: close(biggest_diff, max(abs(s - h) for h, s in zip(heights, spans)))),
+      "Use abs() so -9 counts as 9, then take the max.")
+</script>
+<script type="text/x-python" data-solution="look">
+# heights and spans are lists of numbers (cm), one per student
+print("Number of students:", len(heights))
+print("Heights:", heights)
+print("Arm spans:", spans)
+
+average_height = sum(heights) / len(heights)
+print("Average height:", round(average_height, 1), "cm")
+
+# Task 1
+average_span = sum(spans) / len(spans)
+print("Average arm span:", round(average_span, 1), "cm")
+
+# Task 2
+tallest = max(heights)
+print("Tallest student:", tallest, "cm")
+
+# Task 3
+wider = 0
+for h, s in zip(heights, spans):
+    if s > h:
+        wider = wider + 1
+print("Arm span longer than height:", wider, "students")
+
+# Task 4
+shortest = min(heights)
+height_range = tallest - shortest
+print("Shortest:", shortest, "cm. Range:", height_range, "cm")
+
+# Task 5
+diffs = []
+for h, s in zip(heights, spans):
+    diffs.append(s - h)
+print("Span minus height:", diffs)
+
+# Task 6
+biggest_diff = max(abs(d) for d in diffs)
+print("Biggest difference:", biggest_diff, "cm")
+# Vitruvius was right on average, but almost nobody is exactly 0.
+</script>
+</section>
+
+<section class="activity">
+  <h2>Your model</h2>
+  <p class="task">A model is a rule for making predictions. Ours is a straight line: <code>arm span = m × height + c</code>. Change <code>m</code> and <code>c</code>, run, and beat your best score from the graph (task 1). Tasks 2 to 4 ask harder questions about your model.</p>
+  <details class="hint"><summary>Hint</summary><div>People's arm span is usually close to their height. What value of <code>m</code> and <code>c</code> would make the prediction equal the height exactly? Start there, then adjust.</div></details>
+  <details class="hint"><summary>Hint for tasks 2 to 4</summary><div>Task 2: <code>pred_zero = predict(0)</code>. Tasks 3 and 4: copy the shape of <code>error_score()</code>. For task 3 keep the biggest <code>abs(miss)</code> seen so far; for task 4 add up <code>abs(miss)</code> instead of <code>miss ** 2</code>.</div></details>
+<script type="text/x-python" data-cell="model" data-title="A straight-line model">
+m = 0.5   # slope: how much the arm span grows for each extra cm of height
+c = 80    # intercept: where the line starts
+
+def predict(height):
+    return m * height + c
+
+def error_score():
+    total = 0
+    for h, s in zip(heights, spans):
+        miss = predict(h) - s          # how far the line is from this student
+        total = total + miss ** 2      # square it so every miss counts as positive
+    return total / len(heights)        # the average squared miss
+
+print("Error score:", round(error_score(), 2))
+board.show_line(m, c)                  # draws your line on the graph above
+
+# Task 1: change m and c above and beat your best score from the graph.
+
+# Dig deeper (if you finish early):
+# Task 2: a model answers every question, even silly ones.
+#         Store predict(0) in pred_zero: the arm span of a person 0 cm tall.
+#         So what does c really mean? Would you trust this answer?
+# Task 3: who does your model treat worst? Write a function biggest_miss()
+#         that returns the biggest miss in the class, ignoring + or -.
+# Task 4: why square at all? Write a function mean_abs_error(): the average
+#         miss using abs() instead of ** 2. Print it next to error_score().
+#         If one student's miss became 10 times bigger, which score would
+#         jump more?
+</script>
+<script type="text/x-python" data-check="model">
+_best_by_hand = board.best_by_hand()
+_floor = board.best_possible()
+_target = _best_by_hand if _best_by_hand is not None else 2 * _floor + 1
+check("Task 1: beat your best score from the graph",
+      defined("error_score") and error_score() < _target,
+      f"Your error score is {error_score():.1f}. Get it below {_target:.1f}.")
+def _ok(f):
+    try:
+        return bool(f())
+    except Exception:
+        return False
+_misses = [m * h + c - s for h, s in zip(heights, spans)]
+check("Task 2 (deeper): a person 0 cm tall",
+      defined("pred_zero") and _ok(lambda: close(pred_zero, c)),
+      "pred_zero = predict(0)")
+check("Task 3 (deeper): biggest_miss()",
+      defined("biggest_miss") and _ok(lambda: close(biggest_miss(), max(abs(x) for x in _misses))),
+      "Loop through the students, work out abs(predict(h) - s), keep the biggest and return it.")
+check("Task 4 (deeper): mean_abs_error()",
+      defined("mean_abs_error") and _ok(lambda: close(mean_abs_error(), sum(abs(x) for x in _misses) / len(_misses))),
+      "Like error_score(), but add abs(miss) instead of miss ** 2.")
+</script>
+<script type="text/x-python" data-solution="model">
+m = 1.0   # slope: how much the arm span grows for each extra cm of height
+c = 0     # intercept: where the line starts
+
+def predict(height):
+    return m * height + c
+
+def error_score():
+    total = 0
+    for h, s in zip(heights, spans):
+        miss = predict(h) - s          # how far the line is from this student
+        total = total + miss ** 2      # square it so every miss counts as positive
+    return total / len(heights)        # the average squared miss
+
+# m = 1, c = 0 means "arm span = height": Vitruvius's rule, already a good model.
+# Teacher shortcut: ask the page for the best possible line
+# (the formula from the last activity) to show the class.
+m, c = board.best_line()
+print("Error score:", round(error_score(), 2))
+board.show_line(m, c)
+
+# Task 2
+pred_zero = predict(0)
+print("A person 0 cm tall has an arm span of", round(pred_zero, 1), "cm?!")
+# c is only "where the line crosses 0". Nobody is 0 cm tall: the model
+# has never seen anything like it, but it still answers confidently.
+
+# Task 3
+def biggest_miss():
+    biggest = 0
+    for h, s in zip(heights, spans):
+        miss = abs(predict(h) - s)
+        if miss > biggest:
+            biggest = miss
+    return biggest
+
+# Task 4
+def mean_abs_error():
+    total = 0
+    for h, s in zip(heights, spans):
+        total = total + abs(predict(h) - s)
+    return total / len(heights)
+
+print("Biggest miss:", round(biggest_miss(), 1), "cm")
+print("Average miss (no squaring):", round(mean_abs_error(), 2), "cm")
+print("Error score (squared):", round(error_score(), 2))
+# A miss 10 times bigger counts 10 times more in mean_abs_error,
+# but 100 times more in error_score. Squaring hates big misses.
+</script>
+</section>
+
+<section class="activity">
+  <h2>Let the computer search</h2>
+  <p class="task">The computer tries thousands of lines and keeps the best one. It never gets bored. Run it, then do tasks 1 and 2. Tasks 3 and 4 dig deeper.</p>
+  <details class="hint"><summary>Hint for task 1</summary><div>Count <code>m</code> in thousandths instead of hundredths: <code>range(800, 1201, 2)</code> and <code>m = m_thousandths / 1000</code>.</div></details>
+  <details class="hint"><summary>Hint for tasks 3 and 4</summary><div>Task 3: divide by 1,000,000,000 to get seconds, then by <code>60 * 60 * 24 * 365</code>. Task 4: set <code>m = 1</code>, then loop <code>for c in range(-30, 31):</code> and keep the <code>c</code> with the lowest <code>error_score()</code>. Then work out <code>sum(diffs) / len(diffs)</code> and compare.</div></details>
+<script type="text/x-python" data-cell="search" data-title="Search for the best line" data-needs="model">
+best_score = None
+lines_tried = 0
+
+for m_hundredths in range(80, 121):      # m from 0.80 to 1.20
+    for c_try in range(-30, 31):         # c from -30 to 30
+        m = m_hundredths / 100
+        c = c_try
+        score = error_score()
+        lines_tried += 1
+        if best_score is None or score < best_score:
+            best_score, best_m, best_c = score, m, c
+
+m, c = best_m, best_c
+print(f"Lines tried: {lines_tried}")
+print(f"Best line: m = {m}, c = {c}, error score = {best_score:.2f}")
+board.show_line(m, c)
+
+# Task 1: make the search finer so it tries at least 10,000 lines.
+#         Does it find a better line? Is it worth the extra work?
+# Task 2: our model has 2 numbers. Suppose a model had 10 numbers and you
+#         tried 100 values for each one. How many combinations is that?
+#         Store the answer in combinations. (Real AIs have billions of numbers.)
+
+# Dig deeper (if you finish early):
+# Task 3: at a billion lines per second, how many YEARS would those
+#         combinations take? Store it in years.
+#         In what year would the search have had to start to finish today?
+# Task 4: Vitruvius's model is m = 1 (arm span = height + c).
+#         Fix m = 1, search only c from -30 to 30, and store the best c in
+#         best_c_for_m1. Now work out the average of your diffs from
+#         activity 3. Coincidence?
+</script>
+<script type="text/x-python" data-check="search">
+check("Task 1: try at least 10,000 lines",
+      defined("lines_tried") and lines_tried >= 10000,
+      f"You tried {lines_tried if defined('lines_tried') else 0} lines. Use smaller steps for m or c.")
+check("Task 2: combinations for 10 numbers",
+      defined("combinations") and combinations == 100 ** 10,
+      "2 numbers with 100 values each is 100 × 100. What about 10 numbers? Python writes powers with **.")
+def _ok(f):
+    try:
+        return bool(f())
+    except Exception:
+        return False
+def _score_c(_cc):
+    return sum((h + _cc - s) ** 2 for h, s in zip(heights, spans)) / len(heights)
+check("Task 3 (deeper): years at a billion per second",
+      defined("years") and _ok(lambda: close(years, 100 ** 10 / 1e9 / (60 * 60 * 24 * 365))),
+      "combinations / 1,000,000,000 gives seconds. Then divide by the seconds in a year.")
+check("Task 4 (deeper): best c when m = 1",
+      defined("best_c_for_m1") and _ok(lambda: abs(_score_c(best_c_for_m1) - min(_score_c(_cc) for _cc in range(-30, 31))) < 1e-9),
+      "Set m = 1, try every c from -30 to 30 and keep the c with the lowest error score.")
+</script>
+<script type="text/x-python" data-solution="search">
+best_score = None
+lines_tried = 0
+
+for m_thousandths in range(800, 1201, 2):    # m from 0.800 to 1.200 in steps of 0.002
+    for c_try in range(-30, 31):             # c from -30 to 30
+        m = m_thousandths / 1000
+        c = c_try
+        score = error_score()
+        lines_tried += 1
+        if best_score is None or score < best_score:
+            best_score, best_m, best_c = score, m, c
+
+m, c = best_m, best_c
+print(f"Lines tried: {lines_tried}")
+print(f"Best line: m = {m}, c = {c}, error score = {best_score:.2f}")
+board.show_line(m, c)
+
+combinations = 100 ** 10
+print(f"10 numbers, 100 values each: {combinations:,} combinations")
+
+# Task 3
+years = combinations / 1_000_000_000 / (60 * 60 * 24 * 365)
+print(f"At a billion lines per second: about {years:,.0f} years")
+print(f"To finish in 2026 it would have started around {years - 2026:,.0f} BC")
+
+# Task 4
+m = 1
+best_c_for_m1, best_c_score = None, None
+for c in range(-30, 31):
+    score = error_score()
+    if best_c_score is None or score < best_c_score:
+        best_c_for_m1, best_c_score = c, score
+average_diff = (sum(spans) - sum(heights)) / len(heights)
+print("With m = 1, the best c is", best_c_for_m1)
+print("The average of span minus height is", round(average_diff, 2))
+# Not a coincidence: the best number to add is always the average difference.
+# (The search only tries whole numbers, so it finds the nearest whole number.)
+
+m, c = best_m, best_c        # put the best line back
+board.show_line(m, c)
+</script>
+</section>
+
+<section class="activity extra">
+  <h2>Use the model</h2>
+  <p class="task">Predict arm spans for people who are not in the class. Which predictions would you trust? Then do the two tasks.</p>
+<script type="text/x-python" data-cell="predict" data-title="Make predictions" data-needs="model">
+for height in [150, 175, 200, 229]:      # 229 cm is a very tall basketball player
+    print(f"Height {height} cm  ->  predicted arm span {predict(height):.1f} cm")
+
+# Try a 50 cm baby and a 1,000 cm giant. Is the model still sensible?
+# Is the prediction for 229 cm trustworthy? Why or why not?
+
+# Task 1: make a list called predictions: the model's prediction for every
+#         student in the class.
+# Task 2: a tailor wants sleeves that are right to within 5 cm. For how many
+#         students is your model good enough? Store the count in within_5.
+#         What would you need to make the model better: more data, or
+#         different data?
+</script>
+<script type="text/x-python" data-check="predict">
+def _ok(f):
+    try:
+        return bool(f())
+    except Exception:
+        return False
+check("Task 1: a prediction for every student",
+      defined("predictions") and _ok(lambda: len(predictions) == len(heights) and all(close(p, predict(h)) for p, h in zip(predictions, heights))),
+      "predictions = [predict(h) for h in heights], or build it with a loop and append.")
+check("Task 2: good enough for the tailor",
+      defined("within_5") and _ok(lambda: within_5 == sum(1 for h, s in zip(heights, spans) if abs(predict(h) - s) <= 5)),
+      "Loop through the students and add 1 when abs(predict(h) - s) <= 5.")
+</script>
+<script type="text/x-python" data-solution="predict">
+for height in [150, 175, 200, 229]:      # 229 cm is a very tall basketball player
+    print(f"Height {height} cm  ->  predicted arm span {predict(height):.1f} cm")
+
+# Task 1
+predictions = [predict(h) for h in heights]
+
+# Task 2
+within_5 = 0
+for h, s in zip(heights, spans):
+    if abs(predict(h) - s) <= 5:
+        within_5 = within_5 + 1
+print(f"Good enough for the tailor for {within_5} of {len(heights)} students")
+# A straight line from height alone can't do much better: people differ.
+# To do better you need different data (shoulder width, arm length...),
+# not just more of the same.
+</script>
+</section>
+
+<section class="activity extra">
+  <h2>One wrong number</h2>
+  <p class="task">Real data has mistakes. Someone types <b>1700</b> instead of 170 and presses Enter. What happens to the numbers we trust?</p>
+  <details class="hint"><summary>Hint</summary><div>Task 1: <code>[1700] + heights[1:]</code>. Task 3: <code>sorted(heights)</code> puts the list in order. With <code>n</code> students, the middle is at position <code>n // 2</code>; with an even <code>n</code>, average the values at <code>n // 2 - 1</code> and <code>n // 2</code>.</div></details>
+<script type="text/x-python" data-cell="practice" data-title="One wrong number">
+# Somebody forgot the decimal point: the first student's height became 1700.
+# Task 1: make typo_heights: a copy of heights with the first number
+#         replaced by 1700.
+# Task 2: how far does that one typo move the class average?
+#         Store average(typo_heights) - average(heights) in mean_jump.
+# Task 3: the median is the middle value of the sorted list. Store the median
+#         of heights in median_height and the median of typo_heights in
+#         median_typo. Which one barely moved?
+#
+# Think: the error score squares every miss. When one number is badly wrong,
+#        does it behave more like the average or more like the median?
+</script>
+<script type="text/x-python" data-check="practice">
+import statistics as _st
+def _ok(f):
+    try:
+        return bool(f())
+    except Exception:
+        return False
+check("Task 1: the typo list",
+      defined("typo_heights") and _ok(lambda: list(typo_heights) == [1700] + list(heights[1:])),
+      "Same list as heights, except the first number is 1700: [1700] + heights[1:]")
+check("Task 2: how far the average jumps",
+      defined("mean_jump") and _ok(lambda: close(mean_jump, (1700 - heights[0]) / len(heights))),
+      "Work out both averages with sum(...) / len(...), then subtract.")
+check("Task 3: the two medians",
+      defined("median_height", "median_typo") and _ok(lambda: close(median_height, _st.median(heights)) and close(median_typo, _st.median([1700] + list(heights[1:])))),
+      "Sort each list, then take the middle value (or the average of the two middle values).")
+</script>
+<script type="text/x-python" data-solution="practice">
+# Task 1
+typo_heights = [1700] + heights[1:]
+
+# Task 2
+def average(numbers):
+    return sum(numbers) / len(numbers)
+
+mean_jump = average(typo_heights) - average(heights)
+print("One typo moves the average by", round(mean_jump, 1), "cm")
+
+# Task 3
+def median(numbers):
+    ordered = sorted(numbers)
+    n = len(ordered)
+    if n % 2 == 1:
+        return ordered[n // 2]
+    return (ordered[n // 2 - 1] + ordered[n // 2]) / 2
+
+median_height = median(heights)
+median_typo = median(typo_heights)
+print("Median before:", median_height, " after:", median_typo)
+# The median hardly moves. The average is dragged a long way.
+# Squaring misses makes the error score even MORE sensitive than the average:
+# one bad measurement can pull the whole line towards it.
+</script>
+</section>
+
+<section class="activity extra">
+  <h2>The mathematicians' shortcut</h2>
+  <p class="task">In 1801 astronomers lost the newly found dwarf planet Ceres behind the Sun. A 24-year-old called Carl Friedrich Gauss used this method, <b>least squares</b>, to work out where it would reappear, and he was right. It gives the best line straight away, with no searching. Finish <code>best_line_formula()</code> and compare it with the search.</p>
+  <details class="hint"><summary>Hint</summary><div>Inside the loop: <code>top += (h - mean_h) * (s - mean_s)</code> and <code>bottom += (h - mean_h) ** 2</code>. After the loop, the intercept is <code>c = mean_s - m * mean_h</code>.</div></details>
+<script type="text/x-python" data-cell="formula" data-title="The least-squares formula" data-needs="model">
+def best_line_formula():
+    mean_h = sum(heights) / len(heights)
+    mean_s = sum(spans) / len(spans)
+    top = 0
+    bottom = 0
+    for h, s in zip(heights, spans):
+        top += 0          # replace 0 with (h - mean_h) * (s - mean_s)
+        bottom += 1       # replace 1 with (h - mean_h) ** 2
+    m = top / bottom
+    c = 0                 # replace 0 with the intercept
+    return m, c
+
+m, c = best_line_formula()
+print(f"Formula: m = {m:.4f}, c = {c:.2f}, error score = {error_score():.3f}")
+board.show_line(m, c)
+
+# Think: the line always passes through (average height, average arm span).
+#        Why would the best line go through the "average student"?
+</script>
+<script type="text/x-python" data-check="formula">
+_m_true, _c_true = board.best_line()
+_m, _c = best_line_formula()
+check("Formula gives the best line",
+      close(_m, _m_true, 0.001) and close(_c, _c_true, 0.01),
+      f"Your formula gives m = {_m:.3f}, c = {_c:.2f}. Check all three replacements.")
+</script>
+<script type="text/x-python" data-solution="formula">
+def best_line_formula():
+    mean_h = sum(heights) / len(heights)
+    mean_s = sum(spans) / len(spans)
+    top = 0
+    bottom = 0
+    for h, s in zip(heights, spans):
+        top += (h - mean_h) * (s - mean_s)
+        bottom += (h - mean_h) ** 2
+    m = top / bottom
+    c = mean_s - m * mean_h
+    return m, c
+
+m, c = best_line_formula()
+print(f"Formula: m = {m:.4f}, c = {c:.2f}, error score = {error_score():.3f}")
+board.show_line(m, c)
+</script>
+</section>
+
+<section class="activity">
+  <h2>Check your understanding</h2>
+  <div class="quiz">
+    <div class="quiz-q" data-answer="2">
+      <p>What is a model in machine learning?</p>
+      <ol>
+        <li>A list of all the data we collected</li>
+        <li>A rule learned from data that makes predictions</li>
+        <li>A rule a programmer writes by hand</li>
+        <li>A 3D drawing of the data</li>
+      </ol>
+      <p class="why">The model is what the computer learns. Our model is the line: give it a height, it predicts an arm span.</p>
+    </div>
+    <div class="quiz-q" data-answer="3">
+      <p>Why do we square each miss before adding them up?</p>
+      <ol>
+        <li>To make the score bigger and more impressive</li>
+        <li>Because Python can't add negative numbers</li>
+        <li>So misses above and below the line don't cancel each other out</li>
+        <li>To make the line straighter</li>
+      </ol>
+      <p class="why">A miss of +5 and a miss of −5 would add up to 0, a "perfect" score. Squaring makes every miss count, and big misses count a lot.</p>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p>Line A has an error score of 12. Line B has 40. Which fits the data better?</p>
+      <ol>
+        <li>Line A</li>
+        <li>Line B</li>
+        <li>They fit equally well</li>
+        <li>You can't tell</li>
+      </ol>
+      <p class="why">The error score measures how wrong the line is, so lower is better.</p>
+    </div>
+    <div class="quiz-q" data-answer="4">
+      <p>Our class is between 150 and 190 cm tall. Why should we be careful predicting the arm span of a 229 cm basketball player?</p>
+      <ol>
+        <li>Basketball players don't have arms</li>
+        <li>The line stops at 190 cm</li>
+        <li>The computer can't multiply big numbers</li>
+        <li>The model never saw anyone that tall, so the pattern might not hold</li>
+      </ol>
+      <p class="why">Predicting far outside the data you learned from is called extrapolation. Models are most trustworthy close to their training data.</p>
+    </div>
+  </div>
+</section>
+
+<script type="text/x-python" id="py-setup">
+import board
+import asyncio
+</script>
+
+<footer class="credits">Python runs in your browser using Pyodide.
+  <div class="footer-tools"><button class="linkish" id="clear-saved" type="button">Clear my saved work on this page</button></div>
+</footer>
+</div>
+<script>
+/* Shared runtime for the "How Machines Learn" lessons.
+   - loads Python (Pyodide) in the browser
+   - turns <script type="text/x-python" data-cell> blocks into editable, runnable cells
+   - gives lessons a small canvas plotting helper (Plot)
+   Each lesson adds its own functions to Course.board; Python sees them as `import board`. */
+(function () {
+  "use strict";
+
+  const PYODIDE_VERSION = "314.0.7";
+  const PYODIDE_BASE = window.PYODIDE_BASE || `https://cdn.jsdelivr.net/npm/pyodide@${PYODIDE_VERSION}/`;
+
+  const Course = (window.Course = {
+    board: {},
+    hooks: {},
+    py: null,
+    lessonId: document.documentElement.dataset.lesson || "lesson",
+    reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    extraSavedKeys: [], // lesson-specific storage keys cleared by "Clear my saved work"
+  });
+
+  /* Teacher mode: open any lesson with ?teacher (or #teacher) to get solution buttons.
+     It stays on for the rest of the browser tab. */
+  Course.teacher = (() => {
+    let on = false;
+    try {
+      const p = new URLSearchParams(location.search);
+      if (p.has("teacher") || location.hash === "#teacher") sessionStorage.setItem("aicourse:teacher", "1");
+      if (p.get("teacher") === "0") sessionStorage.removeItem("aicourse:teacher");
+      on = sessionStorage.getItem("aicourse:teacher") === "1";
+    } catch (e) {
+      on = /[?&]teacher|#teacher/.test(location.href);
+    }
+    return on;
+  })();
+
+  /* ---------- small helpers ---------- */
+  Course.$ = (sel, root = document) => root.querySelector(sel);
+  Course.$$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+  Course.fmt = (n, d = 2) => (Number.isFinite(n) ? Number(n).toFixed(d) : "–");
+  Course.clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  Course.sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  Course.nextFrame = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
+
+  Course.store = {
+    get(key, fallback) {
+      try {
+        const v = localStorage.getItem("aicourse:" + key);
+        return v === null ? fallback : JSON.parse(v);
+      } catch (e) {
+        return fallback;
+      }
+    },
+    set(key, value) {
+      try {
+        localStorage.setItem("aicourse:" + key, JSON.stringify(value));
+      } catch (e) {
+        /* storage unavailable: carry on without saving */
+      }
+    },
+    remove(key) {
+      try {
+        localStorage.removeItem("aicourse:" + key);
+      } catch (e) {}
+    },
+  };
+
+  /* Convert anything Python hands to JavaScript into plain JS values. */
+  Course.toJS = function (v) {
+    if (v && typeof v.toJs === "function") {
+      return v.toJs({ dict_converter: Object.fromEntries, create_pyproxies: false });
+    }
+    return v;
+  };
+
+  /* ---------- Python loading ---------- */
+  const statusEl = () => Course.$(".py-status");
+  function setStatus(state, text) {
+    const el = statusEl();
+    if (!el) return;
+    el.dataset.state = state;
+    el.textContent = text;
+  }
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error("Could not download Python from " + src));
+      document.head.appendChild(s);
+    });
+  }
+
+  let currentOut = null;
+  function writeOut(text, cls) {
+    const out = currentOut;
+    if (!out) {
+      console.log(text);
+      return;
+    }
+    if (cls) {
+      const span = document.createElement("span");
+      span.className = cls;
+      span.textContent = text;
+      out.appendChild(span);
+    } else {
+      const last = out.lastChild;
+      if (last && last.nodeType === 3) last.appendData(text);
+      else out.appendChild(document.createTextNode(text));
+    }
+    if (out.textContent.length > 120000) {
+      out.textContent = "… (older output removed)\n" + out.textContent.slice(-60000);
+    }
+    out.scrollTop = out.scrollHeight;
+  }
+
+  /* Helpers available to every task checker (see data-check scripts). */
+  Course.board._check = () => {};
+  const CHECK_HELPERS = `
+def check(label, ok, hint=""):
+    import board as _board
+    _board._check(str(label), bool(ok), str(hint))
+
+def defined(*names):
+    g = globals()
+    return all(n in g for n in names)
+
+def close(a, b, tol=0.01):
+    try:
+        return abs(float(a) - float(b)) <= tol * max(1.0, abs(float(b)))
+    except Exception:
+        return False
+`;
+
+  Course.ready = (async () => {
+    setStatus("loading", "Loading Python…");
+    await new Promise((r) => (document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", r) : r()));
+    await loadScript(PYODIDE_BASE + "pyodide.js");
+    const py = await window.loadPyodide({ indexURL: PYODIDE_BASE });
+    py.setStdout({ batched: (s) => writeOut(s + "\n") });
+    py.setStderr({ batched: (s) => writeOut(s + "\n", "err") });
+    py.registerJsModule("board", Course.board);
+    await py.runPythonAsync(CHECK_HELPERS);
+    const setup = document.getElementById("py-setup");
+    if (Course.hooks.beforeSetup) await Course.hooks.beforeSetup(py);
+    if (setup) await py.runPythonAsync(setup.textContent);
+    Course.py = py;
+    setStatus("ready", "Python ready");
+    return py;
+  })();
+  Course.ready.catch((e) => {
+    console.error(e);
+    setStatus("error", "Python didn't load");
+  });
+
+  /* ---------- Python syntax highlighting ---------- */
+  const KW = new Set(
+    "False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield".split(" ")
+  );
+  const BUILTIN = new Set(
+    "print range len sum min max abs round int float str list dict set tuple enumerate zip sorted reversed isinstance type map filter any all bool".split(" ")
+  );
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const TOKEN = /(#[^\n]*)|([rbfRBF]{0,2}(?:"""[\s\S]*?(?:"""|$)|'''[\s\S]*?(?:'''|$)|"(?:\\.|[^"\\\n])*"?|'(?:\\.|[^'\\\n])*'?))|(\b\d+(?:\.\d+)?(?:e[+-]?\d+)?\b)|([A-Za-z_]\w*)/g;
+  function highlight(code) {
+    let out = "";
+    let last = 0;
+    let m;
+    TOKEN.lastIndex = 0;
+    while ((m = TOKEN.exec(code))) {
+      out += esc(code.slice(last, m.index));
+      if (m[1]) out += `<span class="t-com">${esc(m[1])}</span>`;
+      else if (m[2]) out += `<span class="t-str">${esc(m[2])}</span>`;
+      else if (m[3]) out += `<span class="t-num">${esc(m[3])}</span>`;
+      else {
+        const w = m[4];
+        if (KW.has(w)) out += `<span class="t-kw">${w}</span>`;
+        else if (BUILTIN.has(w)) out += `<span class="t-bi">${w}</span>`;
+        else if (code[TOKEN.lastIndex] === "(") out += `<span class="t-fn">${w}</span>`;
+        else out += w;
+      }
+      last = TOKEN.lastIndex;
+    }
+    return out + esc(code.slice(last)) + "\n";
+  }
+
+  /* ---------- code cells ---------- */
+  const cells = new Map();
+  const checkers = new Map(); // cell id -> { code, labels }
+  const solutions = new Map(); // cell id -> code
+  let queue = Promise.resolve();
+
+  function cleanError(msg) {
+    const lines = String(msg).split("\n");
+    const i = lines.findIndex((l) => /File "<(exec|cell)>"/.test(l));
+    if (i > 0) return "Traceback (most recent call last):\n" + lines.slice(i).join("\n").trim();
+    return String(msg).trim();
+  }
+
+  /* A plain-English line under the most common Python errors. */
+  function friendlyError(msg) {
+    const last = String(msg).trim().split("\n").pop() || "";
+    const name = (last.match(/name '([^']+)' is not defined/) || [])[1];
+    if (/IndentationError|TabError/.test(last))
+      return "The spaces at the start of a line are wrong. Lines inside a for, if or def need 4 more spaces than the line above.";
+    if (/SyntaxError/.test(last)) {
+      if (/was never closed|unexpected EOF|'\(' was never closed/.test(last)) return "A bracket or quote was opened but never closed.";
+      if (/expected ':'/.test(last)) return "Lines starting with for, if, while, def or else must end with a colon :";
+      return "Python couldn't read this line. Look for a missing bracket, colon, comma or quote near the line shown.";
+    }
+    if (name) return `Python doesn't know the name "${name}". Check the spelling (capitals matter), or run the cell above first.`;
+    if (/ZeroDivisionError/.test(last)) return "Something was divided by zero. Is a list empty?";
+    if (/IndexError/.test(last)) return "You asked for a position that isn't in the list. Lists start at position 0.";
+    if (/KeyError/.test(last)) return "That key isn't in the dictionary.";
+    if (/TypeError/.test(last) && /str/.test(last) && /int|float/.test(last))
+      return "You mixed text and numbers. Use int() or float() to turn text into a number, or str() for the other way.";
+    if (/TypeError/.test(last)) return "A value is the wrong type for what you're doing with it. Check what each variable holds.";
+    if (/ValueError/.test(last)) return "A value has the right type but the wrong content.";
+    if (/AttributeError/.test(last)) return "That object doesn't have this method or property. Check the spelling.";
+    return "";
+  }
+
+  function insertText(ta, text) {
+    ta.focus();
+    if (!document.execCommand || !document.execCommand("insertText", false, text)) {
+      ta.setRangeText(text, ta.selectionStart, ta.selectionEnd, "end");
+      ta.dispatchEvent(new Event("input"));
+    }
+  }
+
+  /* ----- task checks: progress is remembered per lesson ----- */
+  const passedKey = `checks:${Course.lessonId}`;
+  const passed = Course.store.get(passedKey, {}) || {};
+  const checkKey = (cellId, label) => cellId + "::" + label;
+
+  function updateProgress() {
+    let total = 0;
+    let done = 0;
+    checkers.forEach((c, id) =>
+      c.labels.forEach((l) => {
+        total += 1;
+        if (passed[checkKey(id, l)]) done += 1;
+      })
+    );
+    let pill = Course.$(".progress-pill");
+    if (!total) return;
+    if (!pill) {
+      const head = Course.$(".lesson-head");
+      if (!head) return;
+      pill = document.createElement("span");
+      pill.className = "progress-pill";
+      pill.setAttribute("role", "status");
+      const status = Course.$(".py-status");
+      const box = document.createElement("div");
+      box.className = "head-pills";
+      if (status) {
+        status.replaceWith(box);
+        box.appendChild(pill);
+        box.appendChild(status);
+      } else head.appendChild(pill);
+    }
+    pill.textContent = `Tasks done: ${done} / ${total}`;
+    pill.dataset.complete = done === total ? "yes" : "no";
+  }
+
+  function renderChecks(cell, latest) {
+    const chk = checkers.get(cell.id);
+    if (!chk) return;
+    let box = cell.el.querySelector(".checks");
+    if (!box) {
+      box = document.createElement("ul");
+      box.className = "checks";
+      box.setAttribute("aria-label", "Your tasks for this cell");
+      cell.el.appendChild(box);
+    }
+    box.innerHTML = "";
+    chk.labels.forEach((label) => {
+      const ok = !!passed[checkKey(cell.id, label)];
+      const li = document.createElement("li");
+      li.className = ok ? "done" : "todo";
+      const mark = document.createElement("span");
+      mark.className = "mark";
+      mark.textContent = ok ? "✓" : "";
+      const text = document.createElement("span");
+      text.className = "label";
+      text.textContent = label;
+      li.append(mark, text);
+      const r = latest && latest.find((x) => x.label === label);
+      if (!ok && r && r.hint) {
+        const h = document.createElement("span");
+        h.className = "check-hint";
+        h.textContent = r.hint;
+        li.appendChild(h);
+      }
+      box.appendChild(li);
+    });
+  }
+
+  async function runChecks(cell, py) {
+    const chk = checkers.get(cell.id);
+    if (!chk) return;
+    const results = [];
+    Course.board._check = (label, ok, hint) => results.push({ label: String(label), ok: !!ok, hint: String(hint || "") });
+    py.globals.set("_output", cell.out.textContent);
+    const prev = currentOut;
+    currentOut = null;
+    try {
+      await py.runPythonAsync(chk.code, { filename: "<check>" });
+    } catch (e) {
+      console.warn("checker failed", e);
+    } finally {
+      currentOut = prev;
+    }
+    results.forEach((r) => {
+      if (r.ok) passed[checkKey(cell.id, r.label)] = true;
+    });
+    Course.store.set(passedKey, passed);
+    renderChecks(cell, results);
+    updateProgress();
+    return results;
+  }
+
+  function makeCell(script) {
+    const id = script.dataset.cell;
+    const original = script.textContent.replace(/^\n+/, "").replace(/\s+$/, "") + "\n";
+    const saveKey = `code:${Course.lessonId}:${id}`;
+    const baseKey = saveKey + ":base";
+    // A short fingerprint of the starter code, so saved work from an older
+    // version of the page is not shown in place of new instructions.
+    let h = 5381;
+    for (let i = 0; i < original.length; i++) h = ((h * 33) ^ original.charCodeAt(i)) >>> 0;
+    const baseHash = h.toString(36);
+    let saved = Course.store.get(saveKey, null);
+    let oldCode = null;
+    if (saved !== null && saved !== original && Course.store.get(baseKey, null) !== baseHash) {
+      oldCode = saved;          // saved against an older version of this cell
+      saved = null;
+    }
+
+    const wrap = document.createElement("div");
+    wrap.className = "cell";
+    wrap.id = "cell-" + id;
+    wrap.innerHTML = `
+      <div class="cell-bar">
+        <span class="cell-title"></span>
+        <span class="hint">Shift + Enter</span>
+        <button class="btn solution" type="button" hidden>Solution</button>
+        <button class="btn reset" type="button" title="Put the original code back">Reset</button>
+        <button class="btn run" type="button">Run</button>
+      </div>
+      <div class="editor">
+        <div class="gutter" aria-hidden="true"></div>
+        <div class="code-scroll"><div class="code-inner"><pre aria-hidden="true"></pre><textarea wrap="off" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Python code"></textarea></div></div>
+      </div>
+      <p class="cell-note" hidden>This cell has new instructions since you last worked on it, so it shows the new version. <button class="linkish old-code" type="button">Show my old code</button></p>
+      <pre class="out" aria-live="polite"></pre>`;
+    wrap.querySelector(".cell-title").textContent = script.dataset.title || "Python";
+    const ta = wrap.querySelector("textarea");
+    const pre = wrap.querySelector(".code-inner pre");
+    const gutter = wrap.querySelector(".gutter");
+    const out = wrap.querySelector(".out");
+    ta.value = saved !== null ? saved : original;
+
+    let lineCount = 0;
+    const render = () => {
+      pre.innerHTML = highlight(ta.value);
+      const n = ta.value.split("\n").length;
+      if (n !== lineCount) {
+        lineCount = n;
+        gutter.textContent = Array.from({ length: n }, (_, i) => i + 1).join("\n");
+      }
+    };
+    let saveTimer = null;
+    ta.addEventListener("input", () => {
+      render();
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => { Course.store.set(saveKey, ta.value); Course.store.set(baseKey, baseHash); }, 400);
+    });
+    render();
+
+    // keep the caret in view when a long line scrolls sideways
+    const scroller = wrap.querySelector(".code-scroll");
+    const followCaret = () => {
+      const before = ta.value.slice(0, ta.selectionStart);
+      const col = before.length - before.lastIndexOf("\n") - 1;
+      const x = 16 + col * 8.43; // approx. width of one character at 14px
+      if (x > scroller.scrollLeft + scroller.clientWidth - 24) scroller.scrollLeft = x - scroller.clientWidth + 48;
+      else if (x < scroller.scrollLeft + 16) scroller.scrollLeft = Math.max(0, x - 48);
+    };
+    ta.addEventListener("keyup", followCaret);
+    ta.addEventListener("click", followCaret);
+
+    ta.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (e.shiftKey || e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        cell.run();
+        return;
+      }
+      if (e.key === "Escape") {
+        ta.blur();
+        return;
+      }
+      if (e.key === "Tab") {
+        e.preventDefault();
+        const { selectionStart: s, selectionEnd: en, value } = ta;
+        if (s !== en && value.slice(s, en).includes("\n")) {
+          // indent / dedent the selected lines
+          const lineStart = value.lastIndexOf("\n", s - 1) + 1;
+          const block = value.slice(lineStart, en);
+          const changed = e.shiftKey ? block.replace(/^ {1,4}/gm, "") : block.replace(/^/gm, "    ");
+          ta.setSelectionRange(lineStart, en);
+          insertText(ta, changed);
+          ta.setSelectionRange(lineStart, lineStart + changed.length);
+        } else if (e.shiftKey) {
+          const lineStart = value.lastIndexOf("\n", s - 1) + 1;
+          const lead = value.slice(lineStart).match(/^ {1,4}/);
+          if (lead) {
+            ta.setSelectionRange(lineStart, lineStart + lead[0].length);
+            insertText(ta, "");
+          }
+        } else {
+          insertText(ta, "    ");
+        }
+        return;
+      }
+      if (e.key === "Enter") {
+        const { selectionStart: s, value } = ta;
+        const lineStart = value.lastIndexOf("\n", s - 1) + 1;
+        const line = value.slice(lineStart, s);
+        let indent = line.match(/^ */)[0];
+        if (/:\s*(#.*)?$/.test(line)) indent += "    ";
+        e.preventDefault();
+        insertText(ta, "\n" + indent);
+      }
+    });
+
+    const setCode = (code) => {
+      ta.value = code;
+      render();
+      Course.store.set(saveKey, code);
+      Course.store.set(baseKey, baseHash);
+    };
+    if (oldCode !== null) {
+      const note = wrap.querySelector(".cell-note");
+      note.hidden = false;
+      note.querySelector(".old-code").addEventListener("click", () => {
+        setCode(oldCode);
+        note.hidden = true;
+      });
+    }
+
+    wrap.querySelector(".run").addEventListener("click", () => cell.run());
+    wrap.querySelector(".reset").addEventListener("click", () => {
+      if (ta.value !== original && !confirm("Put the original code back? Your changes in this cell will be lost.")) return;
+      setCode(original);
+      Course.store.remove(saveKey);
+      Course.store.remove(baseKey);
+      out.textContent = "";
+    });
+    const solBtn = wrap.querySelector(".solution");
+    solBtn.addEventListener("click", () => {
+      const sol = solutions.get(id);
+      if (!sol) return;
+      if (ta.value !== original && ta.value !== sol && !confirm("Replace the code in this cell with the solution?")) return;
+      setCode(sol);
+    });
+
+    const cell = {
+      id,
+      el: wrap,
+      textarea: ta,
+      out,
+      needs: (script.dataset.needs || "").split(/[\s,]+/).filter(Boolean),
+      ranOK: false,
+      original,
+      run: () => runCell(cell, false),
+      setCode,
+      get code() {
+        return ta.value;
+      },
+    };
+    cells.set(id, cell);
+    script.replaceWith(wrap);
+    return cell;
+  }
+
+  function runCell(cell, quiet) {
+    const p = queue.then(() => execute(cell, quiet));
+    queue = p.catch(() => {});
+    return p;
+  }
+
+  async function execute(cell, quiet) {
+    // run any cells this one depends on that haven't been run yet
+    for (const dep of cell.needs) {
+      const c = cells.get(dep);
+      if (c && !c.ranOK) {
+        const ok = await execute(c, true);
+        if (!ok) {
+          cell.out.textContent = "";
+          writeTo(cell.out, `The cell "${c.el.querySelector(".cell-title").textContent}" above has an error. Fix it first.\n`, "err");
+          return false;
+        }
+      }
+    }
+    cell.el.classList.add("running");
+    Course.busy = true;
+    cell.out.textContent = "";
+    let py;
+    try {
+      if (!Course.py) writeTo(cell.out, "Waiting for Python to load…\n", "info");
+      py = await Course.ready;
+      cell.out.textContent = "";
+    } catch (e) {
+      cell.out.textContent = "";
+      writeTo(cell.out, "Python couldn't load, so code can't run. Check the internet connection and reload the page.\n", "err");
+      cell.el.classList.remove("running");
+      Course.busy = false;
+      return false;
+    }
+    if (quiet) writeTo(cell.out, "(run automatically because a cell below needed it)\n", "info");
+    await Course.nextFrame();
+    currentOut = cell.out;
+    let ok = true;
+    try {
+      if (Course.hooks.beforeRun) await Course.hooks.beforeRun(py, cell.id);
+      const result = await py.runPythonAsync(cell.code, { filename: "<cell>" });
+      if (result !== undefined && result !== null && !(result instanceof Promise)) {
+        let text;
+        if (typeof result === "object" && typeof result.toString === "function" && result.type !== undefined) {
+          text = py.globals.get("repr")(result);
+          if (result.destroy) result.destroy();
+        } else text = String(result);
+        writeOut(text + "\n");
+      }
+    } catch (e) {
+      ok = false;
+      writeOut(cleanError(e.message) + "\n", "err");
+      const help = friendlyError(e.message);
+      if (help) writeOut("→ " + help + "\n", "err-help");
+    } finally {
+      currentOut = null;
+      cell.el.classList.remove("running");
+      Course.busy = false;
+      cell.ranOK = ok;
+      if (Course.hooks.afterRun) {
+        try {
+          Course.hooks.afterRun(py, cell.id, ok);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+    if (ok && checkers.has(cell.id)) await runChecks(cell, py);
+    return ok;
+  }
+
+  function writeTo(out, text, cls) {
+    const prev = currentOut;
+    currentOut = out;
+    writeOut(text, cls);
+    currentOut = prev;
+  }
+
+  Course.cells = cells;
+  Course.solutions = solutions;
+  Course.checkers = checkers;
+  Course.passed = passed;
+  Course.runCell = (id) => runCell(cells.get(id), false);
+
+  function initCells() {
+    Course.$$('script[type="text/x-python"][data-solution]').forEach((sc) => {
+      solutions.set(sc.dataset.solution, sc.textContent.replace(/^\n+/, "").replace(/\s+$/, "") + "\n");
+      sc.remove();
+    });
+    Course.$$('script[type="text/x-python"][data-check]').forEach((sc) => {
+      const code = sc.textContent;
+      const labels = [];
+      code.replace(/check\(\s*(["'])((?:(?!\1).)+)\1/g, (_, q, label) => {
+        if (!labels.includes(label)) labels.push(label);
+      });
+      checkers.set(sc.dataset.check, { code, labels });
+      sc.remove();
+    });
+    Course.$$('script[type="text/x-python"][data-cell]').forEach(makeCell);
+    cells.forEach((cell) => {
+      renderChecks(cell, null);
+      if (Course.teacher && solutions.has(cell.id)) cell.el.querySelector(".solution").hidden = false;
+    });
+    updateProgress();
+    initQuizzes();
+    initPageTools();
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initCells);
+  else initCells();
+
+  /* ---------- end-of-lesson quiz ----------
+     <div class="quiz-q" data-answer="2"><p>Question</p><ol><li>…</li></ol><p class="why">…</p></div>
+     data-answer counts from 1. */
+  function initQuizzes() {
+    Course.$$(".quiz-q").forEach((q, qi) => {
+      const answer = Number(q.dataset.answer) - 1;
+      const list = q.querySelector("ol");
+      const why = q.querySelector(".why");
+      if (!list) return;
+      if (why) why.hidden = true;
+      const opts = document.createElement("div");
+      opts.className = "quiz-opts";
+      opts.setAttribute("role", "group");
+      Array.from(list.children).forEach((li, i) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "quiz-opt";
+        b.innerHTML = li.innerHTML;
+        b.addEventListener("click", () => {
+          if (q.dataset.done) return;
+          if (i === answer) {
+            b.classList.add("right");
+            q.dataset.done = "1";
+            if (why) why.hidden = false;
+            opts.querySelectorAll("button").forEach((x) => (x.disabled = x !== b));
+          } else {
+            b.classList.add("wrong");
+            b.disabled = true;
+          }
+        });
+        opts.appendChild(b);
+      });
+      list.replaceWith(opts);
+      const num = document.createElement("span");
+      num.className = "quiz-num";
+      num.textContent = qi + 1;
+      q.prepend(num);
+    });
+  }
+
+  /* ---------- teacher banner and "clear my saved work" ---------- */
+  Course.clearSaved = function () {
+    try {
+      const prefixes = [`aicourse:code:${Course.lessonId}:`, `aicourse:checks:${Course.lessonId}`];
+      const extra = Course.extraSavedKeys.map((k) => "aicourse:" + k);
+      const doomed = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (prefixes.some((p) => k.startsWith(p)) || extra.includes(k)) doomed.push(k);
+      }
+      doomed.forEach((k) => localStorage.removeItem(k));
+    } catch (e) {}
+  };
+  function initPageTools() {
+    const clear = Course.$("#clear-saved");
+    if (clear)
+      clear.addEventListener("click", () => {
+        if (!confirm("Clear everything saved on this page on this laptop (your code, ticks and answers)?")) return;
+        Course.clearSaved();
+        location.reload();
+      });
+    if (Course.teacher) {
+      document.body.classList.add("teacher-mode");
+      const bar = document.createElement("div");
+      bar.className = "teacher-bar";
+      bar.innerHTML = '<span><b>Teacher mode.</b> Each code cell has a Solution button.</span>' +
+        '<button class="btn small" type="button" data-act="solve-all">Load all solutions</button>' +
+        '<button class="btn small" type="button" data-act="exit">Leave teacher mode</button>';
+      bar.querySelector('[data-act="solve-all"]').addEventListener("click", () => {
+        if (!confirm("Replace the code in every cell with its solution?")) return;
+        cells.forEach((c) => solutions.has(c.id) && c.setCode(solutions.get(c.id)));
+      });
+      bar.querySelector('[data-act="exit"]').addEventListener("click", () => {
+        try {
+          sessionStorage.removeItem("aicourse:teacher");
+        } catch (e) {}
+        location.href = location.pathname;
+      });
+      document.body.prepend(bar);
+    }
+  }
+
+  /* ---------- Plot: a small canvas chart helper ---------- */
+  function niceStep(span, count) {
+    const raw = span / count;
+    const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+    const n = raw / pow;
+    return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * pow;
+  }
+
+  class Plot {
+    constructor(canvas, opts = {}) {
+      this.canvas = canvas;
+      this.ctx = canvas.getContext("2d");
+      this.o = Object.assign(
+        { xmin: 0, xmax: 1, ymin: 0, ymax: 1, aspect: 0.62, pad: { l: 56, r: 18, t: 16, b: 44 }, xlabel: "", ylabel: "", axes: true, gridLines: true, square: false },
+        opts
+      );
+      this.onRender = null;
+      this.resize();
+      new ResizeObserver(() => {
+        this.resize();
+        if (this.onRender) this.onRender();
+      }).observe(canvas);
+    }
+    resize() {
+      const dpr = window.devicePixelRatio || 1;
+      const w = this.canvas.clientWidth || 600;
+      const h = this.o.height || Math.round(w * this.o.aspect);
+      this.w = w;
+      this.h = h;
+      this.canvas.style.height = h + "px";
+      if (this.canvas.width !== Math.round(w * dpr) || this.canvas.height !== Math.round(h * dpr)) {
+        this.canvas.width = Math.round(w * dpr);
+        this.canvas.height = Math.round(h * dpr);
+      }
+      this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    setRange(r) {
+      Object.assign(this.o, r);
+    }
+    get plotW() {
+      return this.w - this.o.pad.l - this.o.pad.r;
+    }
+    get plotH() {
+      return this.h - this.o.pad.t - this.o.pad.b;
+    }
+    X(x) {
+      return this.o.pad.l + ((x - this.o.xmin) / (this.o.xmax - this.o.xmin)) * this.plotW;
+    }
+    Y(y) {
+      return this.o.pad.t + (1 - (y - this.o.ymin) / (this.o.ymax - this.o.ymin)) * this.plotH;
+    }
+    invX(px) {
+      return this.o.xmin + ((px - this.o.pad.l) / this.plotW) * (this.o.xmax - this.o.xmin);
+    }
+    invY(py) {
+      return this.o.ymin + (1 - (py - this.o.pad.t) / this.plotH) * (this.o.ymax - this.o.ymin);
+    }
+    eventPos(e) {
+      const r = this.canvas.getBoundingClientRect();
+      return { px: e.clientX - r.left, py: e.clientY - r.top };
+    }
+    clear() {
+      const c = this.ctx;
+      c.clearRect(0, 0, this.w, this.h);
+      c.fillStyle = "#ffffff";
+      c.fillRect(0, 0, this.w, this.h);
+      if (this.o.axes) this.drawAxes();
+    }
+    drawAxes() {
+      const c = this.ctx;
+      const o = this.o;
+      const { l, t } = o.pad;
+      c.save();
+      c.font = "12px " + getComputedStyle(document.body).fontFamily;
+      c.fillStyle = "#5b6680";
+      c.strokeStyle = "#e6ebf3";
+      c.lineWidth = 1;
+      const xs = niceStep(o.xmax - o.xmin, Math.max(3, this.plotW / 80));
+      const ys = niceStep(o.ymax - o.ymin, Math.max(3, this.plotH / 50));
+      const dec = (s) => Math.max(0, -Math.floor(Math.log10(s) + 1e-9));
+      const tick = (v, d) => { const t = v.toFixed(d); return /^-0(\.0*)?$/.test(t) ? t.slice(1) : t; };
+      c.textAlign = "center";
+      c.textBaseline = "top";
+      for (let x = Math.ceil(o.xmin / xs) * xs; x <= o.xmax + 1e-9; x += xs) {
+        const px = Math.round(this.X(x)) + 0.5;
+        if (o.gridLines) {
+          c.beginPath();
+          c.moveTo(px, t);
+          c.lineTo(px, t + this.plotH);
+          c.stroke();
+        }
+        c.fillText(tick(x, dec(xs)), px, t + this.plotH + 6);
+      }
+      c.textAlign = "right";
+      c.textBaseline = "middle";
+      for (let y = Math.ceil(o.ymin / ys) * ys; y <= o.ymax + 1e-9; y += ys) {
+        const py = Math.round(this.Y(y)) + 0.5;
+        if (o.gridLines) {
+          c.beginPath();
+          c.moveTo(l, py);
+          c.lineTo(l + this.plotW, py);
+          c.stroke();
+        }
+        c.fillText(tick(y, dec(ys)), l - 8, py);
+      }
+      c.strokeStyle = "#8a95ad";
+      c.strokeRect(l + 0.5, t + 0.5, this.plotW, this.plotH);
+      c.fillStyle = "#18213a";
+      c.font = "13px " + getComputedStyle(document.body).fontFamily;
+      if (o.xlabel) {
+        c.textAlign = "center";
+        c.textBaseline = "bottom";
+        c.fillText(o.xlabel, l + this.plotW / 2, this.h - 2);
+      }
+      if (o.ylabel) {
+        c.save();
+        c.translate(14, t + this.plotH / 2);
+        c.rotate(-Math.PI / 2);
+        c.textAlign = "center";
+        c.textBaseline = "middle";
+        c.fillText(o.ylabel, 0, 0);
+        c.restore();
+      }
+      c.restore();
+    }
+    clip(fn) {
+      const c = this.ctx;
+      c.save();
+      c.beginPath();
+      c.rect(this.o.pad.l, this.o.pad.t, this.plotW, this.plotH);
+      c.clip();
+      fn(c);
+      c.restore();
+    }
+    dot(x, y, { r = 5, fill = "#18213a", stroke = null, lw = 1.5 } = {}) {
+      const c = this.ctx;
+      c.beginPath();
+      c.arc(this.X(x), this.Y(y), r, 0, Math.PI * 2);
+      if (fill) {
+        c.fillStyle = fill;
+        c.fill();
+      }
+      if (stroke) {
+        c.strokeStyle = stroke;
+        c.lineWidth = lw;
+        c.stroke();
+      }
+    }
+    segment(x1, y1, x2, y2, { color = "#3f3bd9", lw = 2, dash = null } = {}) {
+      this.clip((c) => {
+        c.strokeStyle = color;
+        c.lineWidth = lw;
+        if (dash) c.setLineDash(dash);
+        c.beginPath();
+        c.moveTo(this.X(x1), this.Y(y1));
+        c.lineTo(this.X(x2), this.Y(y2));
+        c.stroke();
+      });
+    }
+    polyline(pts, { color = "#3f3bd9", lw = 2, dash = null } = {}) {
+      if (!pts.length) return;
+      this.clip((c) => {
+        c.strokeStyle = color;
+        c.lineWidth = lw;
+        c.lineJoin = "round";
+        if (dash) c.setLineDash(dash);
+        c.beginPath();
+        pts.forEach(([x, y], i) => (i ? c.lineTo(this.X(x), this.Y(y)) : c.moveTo(this.X(x), this.Y(y))));
+        c.stroke();
+      });
+    }
+    fn(f, opts = {}) {
+      const pts = [];
+      const n = Math.max(80, Math.round(this.plotW / 3));
+      for (let i = 0; i <= n; i++) {
+        const x = this.o.xmin + ((this.o.xmax - this.o.xmin) * i) / n;
+        pts.push([x, f(x)]);
+      }
+      this.polyline(pts, opts);
+    }
+    label(x, y, text, { color = "#18213a", align = "left", base = "bottom", size = 13, bold = false, dx = 0, dy = 0 } = {}) {
+      const c = this.ctx;
+      c.save();
+      c.font = `${bold ? "700 " : ""}${size}px ` + getComputedStyle(document.body).fontFamily;
+      c.fillStyle = color;
+      c.textAlign = align;
+      c.textBaseline = base;
+      c.fillText(text, this.X(x) + dx, this.Y(y) + dy);
+      c.restore();
+    }
+    heat(values, colorFn) {
+      // values: rows from top (ymax) to bottom (ymin), columns from xmin to xmax
+      const rows = values.length;
+      const cols = values[0].length;
+      const cw = this.plotW / cols;
+      const ch = this.plotH / rows;
+      const c = this.ctx;
+      for (let i = 0; i < rows; i++)
+        for (let j = 0; j < cols; j++) {
+          c.fillStyle = colorFn(values[i][j]);
+          c.fillRect(this.o.pad.l + j * cw, this.o.pad.t + i * ch, cw + 0.6, ch + 0.6);
+        }
+    }
+  }
+  Course.Plot = Plot;
+
+  /* Simple tween helper for animations; finishes instantly with reduced motion. */
+  Course.tween = function (ms, step) {
+    if (Course.reducedMotion || ms <= 0) {
+      step(1);
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      const t0 = performance.now();
+      function frame(now) {
+        const t = Math.min(1, (now - t0) / ms);
+        step(t);
+        if (t < 1) requestAnimationFrame(frame);
+        else resolve();
+      }
+      requestAnimationFrame(frame);
+    });
+  };
+
+  /* Class data shared by Lessons 1 and 2 (same website = same saved data). */
+  Course.exampleClassData = [
+    [152, 150], [155, 157], [158, 155], [160, 163], [161, 158], [163, 166], [164, 162], [165, 169],
+    [167, 165], [168, 171], [169, 167], [170, 174], [171, 170], [172, 169], [173, 177], [175, 173],
+    [176, 180], [177, 175], [178, 182], [180, 178], [181, 185], [183, 181], [185, 189], [188, 186],
+  ];
+  Course.getClassData = function () {
+    const d = Course.store.get("classData", null);
+    if (Array.isArray(d) && d.length >= 2) return d;
+    return Course.exampleClassData.map((r) => r.slice());
+  };
+})();
+
+</script>
+<script>
+(function () {
+  "use strict";
+  const { $, fmt, store } = Course;
+  const INK = "#18213a";
+  const ACCENT = "#3f3bd9";
+  const RED = "#d9363e";
+  const GREEN = "#1d9467";
+  Course.extraSavedKeys.push("L1best");
+
+  /* ================= class data table ================= */
+  let rows = store.get("classDataRaw", null) || Course.getClassData().map(([h, s]) => [String(h), String(s)]);
+  const tbody = $("#data-table tbody");
+
+  const valid = (v) => {
+    const n = Number(v);
+    return v !== "" && v !== null && Number.isFinite(n) && n >= 50 && n <= 260 ? n : null;
+  };
+  const cleanData = () =>
+    rows.map(([h, s]) => [valid(h), valid(s)]).filter(([h, s]) => h !== null && s !== null);
+
+  function saveData() {
+    store.set("classDataRaw", rows);
+    store.set("classData", cleanData());
+  }
+
+  function renderTable(focusLast) {
+    tbody.innerHTML = "";
+    rows.forEach((row, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${i + 1}</td>
+        <td><input type="number" inputmode="decimal" aria-label="Height of student ${i + 1}"></td>
+        <td><input type="number" inputmode="decimal" aria-label="Arm span of student ${i + 1}"></td>
+        <td><button class="btn small" type="button" aria-label="Remove student ${i + 1}">Remove</button></td>`;
+      const [hIn, sIn] = tr.querySelectorAll("input");
+      hIn.value = row[0];
+      sIn.value = row[1];
+      const mark = () => {
+        hIn.style.borderColor = row[0] === "" || valid(row[0]) !== null ? "" : "var(--red)";
+        sIn.style.borderColor = row[1] === "" || valid(row[1]) !== null ? "" : "var(--red)";
+      };
+      hIn.addEventListener("input", () => {
+        row[0] = hIn.value;
+        mark();
+        dataChanged();
+      });
+      sIn.addEventListener("input", () => {
+        row[1] = sIn.value;
+        mark();
+        dataChanged();
+      });
+      // Enter in the arm-span box jumps to a new row: quick typing for a whole class
+      sIn.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          if (i === rows.length - 1) {
+            rows.push(["", ""]);
+            renderTable(true);
+            saveData();
+          } else tbody.rows[i + 1].querySelector("input").focus();
+        }
+      });
+      tr.querySelector("button").addEventListener("click", () => {
+        rows.splice(i, 1);
+        if (!rows.length) rows.push(["", ""]);
+        renderTable();
+        dataChanged();
+      });
+      mark();
+      tbody.appendChild(tr);
+    });
+    if (focusLast) {
+      const inputs = tbody.querySelectorAll("tr:last-child input");
+      if (inputs[0]) {
+        inputs[0].focus();
+        inputs[0].scrollIntoView({ block: "nearest" });
+      }
+    }
+  }
+
+  function updateStats() {
+    const d = cleanData();
+    $("#n-students").textContent = d.length;
+    const avg = (k) => d.reduce((a, r) => a + r[k], 0) / d.length;
+    $("#avg-h").textContent = d.length ? fmt(avg(0), 1) + " cm" : "–";
+    $("#avg-s").textContent = d.length ? fmt(avg(1), 1) + " cm" : "–";
+    $("#n-wider").textContent = d.length ? `${d.filter(([h, s]) => s > h).length} of ${d.length}` : "–";
+  }
+
+  function dataChanged() {
+    saveData();
+    updateStats();
+    fitRange();
+    renderPlot();
+  }
+
+  $("#add-row").addEventListener("click", () => {
+    rows.push(["", ""]);
+    renderTable(true);
+    saveData();
+  });
+  $("#use-example").addEventListener("click", () => {
+    if (cleanData().length > 3 && !confirm("Replace the table with the example data?")) return;
+    rows = Course.exampleClassData.map(([h, s]) => [String(h), String(s)]);
+    renderTable();
+    dataChanged();
+  });
+  $("#clear-table").addEventListener("click", () => {
+    if (!confirm("Remove everyone from the table?")) return;
+    rows = [["", ""]];
+    renderTable(true);
+    dataChanged();
+  });
+
+  /* ----- paste a list / share the table as a link ----- */
+  function parsePairs(text) {
+    const out = [];
+    text.split(/[\n;]+/).forEach((line) => {
+      const nums = line.match(/\d+(?:[.,]\d+)?/g);
+      if (nums && nums.length >= 2) out.push([nums[0].replace(",", "."), nums[1].replace(",", ".")]);
+    });
+    return out;
+  }
+  $("#paste-add").addEventListener("click", () => {
+    const pairs = parsePairs($("#paste-box").value);
+    const msg = $("#share-msg");
+    if (!pairs.length) {
+      msg.textContent = "No pairs of numbers found. Put one student per line, for example: 165 168";
+      return;
+    }
+    rows = rows.filter(([h, s]) => h !== "" || s !== "");
+    rows.push(...pairs);
+    $("#paste-box").value = "";
+    renderTable();
+    dataChanged();
+    msg.textContent = `Added ${pairs.length} students.`;
+  });
+  $("#share-link").addEventListener("click", async () => {
+    const d = cleanData();
+    const msg = $("#share-msg");
+    if (!d.length) {
+      msg.textContent = "The table is empty.";
+      return;
+    }
+    const url = location.href.split("#")[0].split("?")[0] + "#data=" + d.map(([h, s]) => `${h}-${s}`).join(".");
+    try {
+      await navigator.clipboard.writeText(url);
+      msg.textContent = "Link copied. Anyone who opens it gets this table.";
+    } catch (e) {
+      msg.innerHTML = "";
+      const input = document.createElement("input");
+      input.type = "text";
+      input.readOnly = true;
+      input.value = url;
+      input.style.width = "100%";
+      msg.append("Copy this link:", input);
+      input.select();
+    }
+  });
+  // opening a shared link loads its table
+  (function loadShared() {
+    const m = location.hash.match(/^#data=([\d.\-]+)$/);
+    if (!m) return;
+    const pairs = m[1].split(".").map((p) => p.split("-")).filter((p) => p.length === 2 && valid(p[0]) !== null && valid(p[1]) !== null);
+    if (!pairs.length) return;
+    rows = pairs;
+    saveData();
+    history.replaceState(null, "", location.pathname + location.search);
+    setTimeout(() => ($("#share-msg").textContent = `Loaded ${pairs.length} students from the shared link.`), 0);
+    const det = $("details.share");
+    if (det) det.open = true;
+  })();
+
+  /* ================= line-fitting plot ================= */
+  const plot = new Course.Plot($("#fit-plot"), { aspect: 0.72, xlabel: "Height (cm)", ylabel: "Arm span (cm)" });
+  let m = 0.5;
+  let c = 85;
+  let best = store.get("L1best", null);
+  let byHand = false; // only lines dragged by hand count towards "your best score"
+  const show = { miss: false, sq: false, best: false };
+
+  function fitRange() {
+    const d = cleanData();
+    let lo = 140;
+    let hi = 200;
+    if (d.length) {
+      const all = d.flat();
+      lo = Math.floor((Math.min(...all) - 6) / 5) * 5;
+      hi = Math.ceil((Math.max(...all) + 6) / 5) * 5;
+    }
+    plot.setRange({ xmin: lo, xmax: hi, ymin: lo, ymax: hi });
+  }
+
+  /* the least-squares line: the lowest possible error score */
+  function bestLine() {
+    const d = cleanData();
+    if (d.length < 2) return [1, 0];
+    const mh = d.reduce((a, r) => a + r[0], 0) / d.length;
+    const ms = d.reduce((a, r) => a + r[1], 0) / d.length;
+    let top = 0;
+    let bottom = 0;
+    d.forEach(([h, s]) => {
+      top += (h - mh) * (s - ms);
+      bottom += (h - mh) ** 2;
+    });
+    const bm = bottom ? top / bottom : 1;
+    return [bm, ms - bm * mh];
+  }
+  const errorOf = (mm, cc) => {
+    const d = cleanData();
+    if (!d.length) return NaN;
+    return d.reduce((a, [h, s]) => a + (mm * h + cc - s) ** 2, 0) / d.length;
+  };
+
+  const handleXs = () => {
+    const { xmin, xmax } = plot.o;
+    return [xmin + 0.12 * (xmax - xmin), xmax - 0.12 * (xmax - xmin)];
+  };
+
+  function renderPlot() {
+    const d = cleanData();
+    plot.clear();
+    const { xmin, xmax } = plot.o;
+    const ctx = plot.ctx;
+    if (show.sq) {
+      // each square's side is the miss, drawn in screen pixels so it is a true square
+      plot.clip(() => {
+        d.forEach(([h, s]) => {
+          const yLine = m * h + c;
+          const side = plot.Y(s) - plot.Y(yLine); // signed, in pixels
+          const px = plot.X(h);
+          const top = Math.min(plot.Y(s), plot.Y(yLine));
+          const size = Math.abs(side);
+          const left = yLine > s ? px : px - size; // put the square on alternating sides for clarity
+          ctx.fillStyle = "rgba(217,54,62,0.12)";
+          ctx.strokeStyle = "rgba(217,54,62,0.55)";
+          ctx.lineWidth = 1;
+          ctx.fillRect(left, top, size, size);
+          ctx.strokeRect(left + 0.5, top + 0.5, size, size);
+        });
+      });
+    }
+    if (show.miss || show.sq) {
+      d.forEach(([h, s]) => plot.segment(h, s, h, m * h + c, { color: RED, lw: 2 }));
+    }
+    if (show.best) {
+      const [bm, bc] = bestLine();
+      plot.segment(xmin, bm * xmin + bc, xmax, bm * xmax + bc, { color: GREEN, lw: 2.5, dash: [8, 6] });
+      plot.label(xmax, plot.o.ymin, `green dashed line: best possible score ${fmt(errorOf(bm, bc), 1)}`, { align: "right", base: "bottom", dx: -10, dy: -8, color: GREEN, bold: true });
+    }
+    plot.segment(xmin, m * xmin + c, xmax, m * xmax + c, { color: ACCENT, lw: 3 });
+    d.forEach(([h, s]) => plot.dot(h, s, { r: 5.5, fill: INK, stroke: "#ffffff", lw: 1.5 }));
+    handleXs().forEach((hx) => plot.dot(hx, m * hx + c, { r: 9, fill: "rgba(63,59,217,0.18)", stroke: ACCENT, lw: 2.5 }));
+    updateReadouts();
+  }
+  plot.onRender = renderPlot;
+
+  function updateReadouts() {
+    const e = errorOf(m, c);
+    $("#err").textContent = fmt(e, 1);
+    $("#m-out").textContent = fmt(m, 3);
+    $("#c-out").textContent = fmt(c, 1);
+    if (byHand && Number.isFinite(e) && (best === null || e < best - 1e-9)) {
+      best = e;
+      store.set("L1best", best);
+    }
+    $("#best").textContent = best === null ? "–" : fmt(best, 1);
+  }
+
+  // dragging the handles or the whole line
+  let drag = null;
+  const canvas = plot.canvas;
+  const nearHandle = (px, py, hx) => Math.hypot(px - plot.X(hx), py - plot.Y(m * hx + c)) < 18;
+  canvas.addEventListener("pointerdown", (e) => {
+    const { px, py } = plot.eventPos(e);
+    const [xa, xb] = handleXs();
+    if (nearHandle(px, py, xa)) drag = { kind: "a" };
+    else if (nearHandle(px, py, xb)) drag = { kind: "b" };
+    else if (Math.abs(plot.Y(m * plot.invX(px) + c) - py) < 14) drag = { kind: "shift", startY: plot.invY(py), c0: c };
+    if (drag) {
+      byHand = true;
+      canvas.setPointerCapture(e.pointerId);
+      $("#line-source").textContent = "";
+      e.preventDefault();
+    }
+  });
+  canvas.addEventListener("pointermove", (e) => {
+    const { px, py } = plot.eventPos(e);
+    if (!drag) {
+      const [xa, xb] = handleXs();
+      const overHandle = nearHandle(px, py, xa) || nearHandle(px, py, xb);
+      const overLine = Math.abs(plot.Y(m * plot.invX(px) + c) - py) < 14;
+      canvas.style.cursor = overHandle ? "grab" : overLine ? "ns-resize" : "default";
+      return;
+    }
+    const y = plot.invY(py);
+    const [xa, xb] = handleXs();
+    if (drag.kind === "shift") {
+      c = drag.c0 + (y - drag.startY);
+    } else {
+      const ya = drag.kind === "a" ? y : m * xa + c;
+      const yb = drag.kind === "b" ? y : m * xb + c;
+      m = (yb - ya) / (xb - xa);
+      c = ya - m * xa;
+    }
+    renderPlot();
+  });
+  const endDrag = () => (drag = null);
+  canvas.addEventListener("pointerup", endDrag);
+  canvas.addEventListener("pointercancel", endDrag);
+
+  [["#show-miss", "miss"], ["#show-sq", "sq"], ["#show-best", "best"]].forEach(([sel, key]) =>
+    $(sel).addEventListener("change", (e) => {
+      show[key] = e.target.checked;
+      renderPlot();
+    })
+  );
+  $("#reset-line").addEventListener("click", () => {
+    m = 0.5;
+    c = 85;
+    $("#line-source").textContent = "";
+    renderPlot();
+  });
+
+  /* ================= Python bridge ================= */
+  Course.board.show_line = (newM, newC) => {
+    m = Number(newM);
+    c = Number(newC);
+    byHand = false;
+    $("#line-source").textContent = "Line drawn by your Python code.";
+    renderPlot();
+  };
+  Course.board.best_by_hand = () => (best === null ? undefined : best);
+  Course.board.best_possible = () => {
+    const [bm, bc] = bestLine();
+    return errorOf(bm, bc);
+  };
+  Course.board.best_line = () => {
+    const r = bestLine();
+    return Course.py ? Course.py.toPy(r) : r;
+  };
+
+  Course.hooks.beforeRun = (py) => {
+    const d = cleanData();
+    py.globals.set("heights", py.toPy(d.map((r) => r[0])));
+    py.globals.set("spans", py.toPy(d.map((r) => r[1])));
+  };
+
+  renderTable();
+  updateStats();
+  fitRange();
+  renderPlot();
+})();
+
+</script>
+</body>
+</html>
