@@ -7,5 +7,6 @@ Course index: https://chernolesskiy.github.io/lsmp-ai-course/
 - Lesson 2: /lesson2/
 - Lesson 1 answers: /answers/
 - Lesson 2 solutions: /lesson2-solutions/
+- Lesson 3: /lesson3/
 
 Answers (for teachers): https://chernolesskiy.github.io/lsmp-ai-course/answers/
