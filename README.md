@@ -10,3 +10,5 @@ Course index: https://chernolesskiy.github.io/lsmp-ai-course/
 - Lesson 3: /lesson3/
 
 Answers (for teachers): https://chernolesskiy.github.io/lsmp-ai-course/answers/
+- Lesson 3 solutions: /lesson3-solutions/
+- Lesson 4: /lesson4/

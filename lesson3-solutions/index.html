@@ -1,0 +1,2423 @@
+<!doctype html>
+<html lang="en" data-lesson="lesson3" data-teacher="1">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Build a brain cell (solutions)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #f6f8fc;
+  --card: #ffffff;
+  --ink: #18213a;
+  --muted: #5b6680;
+  --grid: #dfe5ef;
+  --line: #c6cfde;
+  --accent: #3f3bd9;
+  --accent-soft: #e9e8fd;
+  --marker: #f5c518;
+  --marker-soft: #fff4c2;
+  --red: #d9363e;
+  --green: #1d9467;
+  --code-bg: #151b2d;
+  --code-ink: #e3e8f5;
+  --out-bg: #0e1322;
+  --radius: 10px;
+  --font: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 17px;
+  line-height: 1.5;
+}
+a { color: var(--accent); }
+.page { max-width: 1040px; margin: 0 auto; padding: 0 20px 96px; }
+
+/* Header */
+.lesson-head {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
+  padding: 32px 0 18px; border-bottom: 3px solid var(--ink); flex-wrap: wrap;
+}
+.lesson-head .titles { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
+.lesson-num {
+  font-size: 3.4rem; line-height: 0.9; font-weight: 700; color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.lesson-head h1 { margin: 0; font-size: 2rem; line-height: 1.1; letter-spacing: -0.01em; }
+.lesson-head .home { font-size: 0.95rem; color: var(--muted); text-decoration: none; display: block; margin-bottom: 4px; }
+.lesson-head .home:hover { color: var(--accent); }
+
+.py-status {
+  display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem;
+  padding: 6px 12px; border-radius: 999px; background: var(--card); border: 1px solid var(--line);
+  white-space: nowrap;
+}
+.py-status::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--marker); }
+.py-status[data-state="ready"]::before { background: var(--green); }
+.py-status[data-state="error"]::before { background: var(--red); }
+.py-status[data-state="loading"]::before { animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.25; } }
+
+/* Activities */
+.activity { margin-top: 44px; counter-increment: activity; }
+.activity > h2 {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 1.35rem; margin: 0 0 6px; line-height: 1.25;
+}
+.activity > h2::before {
+  content: counter(activity);
+  flex: none; display: inline-grid; place-items: center;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--ink); color: #fff; font-size: 1rem;
+}
+.activity.extra > h2::before { content: "+"; background: var(--accent); }
+body { counter-reset: activity; }
+.task { margin: 0 0 12px 44px; color: var(--muted); max-width: 72ch; }
+.task b { color: var(--ink); font-weight: 700; }
+.activity > :not(h2):not(.task) { margin-left: 44px; }
+@media (max-width: 700px) {
+  .activity > :not(h2):not(.task), .task { margin-left: 0; }
+}
+
+.panel {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px; margin-bottom: 14px;
+}
+.split { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; align-items: start; }
+.split.wide-side { grid-template-columns: minmax(0, 1fr) 320px; }
+@media (max-width: 820px) { .split, .split.wide-side { grid-template-columns: 1fr; } }
+
+canvas.plot { width: 100%; display: block; touch-action: none; border-radius: 6px; }
+
+/* Readouts and controls */
+.readouts { display: grid; gap: 10px; }
+.readout { border: 1px solid var(--grid); border-radius: 8px; padding: 8px 12px; }
+.readout .k { font-size: 0.85rem; color: var(--muted); }
+.readout .v { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.readout.score { background: var(--marker-soft); border-color: var(--marker); }
+.readout.good { background: #e3f6ee; border-color: var(--green); }
+.readout.bad { background: #fde8e9; border-color: var(--red); }
+
+.controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin-top: 12px; }
+.control { display: grid; gap: 2px; min-width: 150px; }
+.control label, .control .lbl { font-size: 0.85rem; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+.control output { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+select, input[type="number"], input[type="text"] {
+  font: inherit; font-size: 0.95rem; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px;
+  background: #fff; color: var(--ink);
+}
+input[type="number"] { width: 84px; font-variant-numeric: tabular-nums; }
+
+.btn {
+  font: inherit; font-size: 0.95rem; font-weight: 700; cursor: pointer;
+  padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line);
+  background: #fff; color: var(--ink);
+}
+.btn:hover { border-color: var(--ink); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { background: #2f2bc0; }
+.btn.small { padding: 4px 10px; font-size: 0.85rem; }
+.btn:disabled { opacity: 0.5; cursor: default; }
+:focus-visible { outline: 3px solid var(--marker); outline-offset: 2px; }
+
+.toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 0.95rem; cursor: pointer; }
+.toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+.note { font-size: 0.9rem; color: var(--muted); margin: 8px 0 0; }
+.flash { font-weight: 700; color: var(--green); }
+
+/* Tables */
+table.data { border-collapse: collapse; font-variant-numeric: tabular-nums; width: 100%; }
+table.data th, table.data td { padding: 5px 8px; border-bottom: 1px solid var(--grid); text-align: left; }
+table.data th { font-size: 0.85rem; color: var(--muted); font-weight: 400; }
+table.data td.ok { color: var(--green); font-weight: 700; }
+table.data td.no { color: var(--red); font-weight: 700; }
+
+/* Code cells */
+.cell { background: var(--code-bg); border-radius: var(--radius); margin: 0 0 16px; overflow: hidden; border: 1px solid #0b0f1c; }
+.cell-bar {
+  display: flex; align-items: center; gap: 8px; padding: 7px 8px 7px 14px;
+  background: #1d2440; color: #aab3cc; font-size: 0.85rem;
+}
+.cell-bar .cell-title { flex: 1; color: #e3e8f5; font-weight: 700; font-size: 0.92rem; }
+.cell-bar .hint { font-size: 0.78rem; color: #7f89a6; }
+.cell-bar .btn { background: transparent; color: #c9d1e8; border-color: #3a4366; padding: 4px 10px; font-size: 0.85rem; }
+.cell-bar .btn:hover { border-color: #c9d1e8; }
+.cell-bar .btn.run { background: var(--marker); color: #18213a; border-color: var(--marker); }
+.cell-bar .btn.run:hover { background: #ffd84a; }
+.cell.running .cell-bar .btn.run { opacity: 0.6; }
+.cell.running .cell-bar { background: #2a2f63; }
+
+.editor { display: flex; font-family: var(--mono); font-size: 14px; line-height: 1.55; }
+.editor .gutter {
+  flex: none; min-width: 2.9em; padding: 12px 10px 12px 6px; text-align: right;
+  color: #59638a; background: #121828; border-right: 1px solid #262d47;
+  white-space: pre; user-select: none; font: inherit; line-height: inherit;
+}
+.editor .code-scroll { flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; }
+.editor .code-inner { position: relative; width: max-content; min-width: 100%; }
+.editor pre, .editor textarea {
+  margin: 0; padding: 12px 16px; border: 0;
+  font: inherit; line-height: inherit; letter-spacing: 0;
+  white-space: pre; overflow-wrap: normal; word-break: normal;
+  tab-size: 4; -moz-tab-size: 4;
+}
+.editor pre { color: var(--code-ink); min-height: 2.6em; pointer-events: none; }
+.editor textarea {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  background: transparent; color: transparent; caret-color: #fff;
+  resize: none; overflow: hidden; outline: none;
+}
+.editor textarea::selection { background: rgba(120, 140, 255, 0.35); color: transparent; }
+.editor:focus-within .gutter { box-shadow: inset -3px 0 0 var(--marker); }
+.t-kw { color: #c792ea; }
+.t-bi { color: #82aaff; }
+.t-fn { color: #7fdbca; }
+.t-str { color: #c3e88d; }
+.t-num { color: #f78c6c; }
+.t-com { color: #7a85a3; font-style: italic; }
+
+.out {
+  margin: 0; padding: 10px 16px; background: var(--out-bg); color: #d7deef;
+  font-family: var(--mono); font-size: 13.5px; line-height: 1.5;
+  white-space: pre-wrap; overflow-wrap: anywhere; max-height: 340px; overflow: auto;
+  border-top: 1px solid #262d47;
+}
+.out:empty { display: none; }
+.out .err { color: #ff9b9b; }
+.out .err-help { display: block; margin-top: 6px; color: #ffd27a; font-family: var(--font); font-size: 0.95rem; }
+.out .info { color: #8f9abb; }
+
+/* Task checklist under a cell */
+.checks { list-style: none; margin: 0; padding: 8px 14px 10px; background: #f1f3fb; border-top: 1px solid #0b0f1c; display: grid; gap: 5px; }
+.checks li { display: grid; grid-template-columns: 22px 1fr; gap: 2px 8px; align-items: start; font-size: 0.95rem; color: var(--ink); }
+.checks .mark {
+  width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line); background: #fff;
+  display: inline-grid; place-items: center; font-size: 0.8rem; font-weight: 700; margin-top: 2px;
+}
+.checks li.done .mark { background: var(--green); border-color: var(--green); color: #fff; }
+.checks li.done .label { color: var(--muted); }
+.checks .check-hint { grid-column: 2; font-size: 0.88rem; color: #8a5a00; }
+
+/* Hints students can open */
+details.hint { margin: 0 0 14px 44px; max-width: 72ch; }
+details.hint summary { cursor: pointer; color: var(--accent); font-weight: 700; font-size: 0.95rem; width: fit-content; }
+details.hint[open] summary { margin-bottom: 6px; }
+details.hint > div { background: var(--marker-soft); border-left: 3px solid var(--marker); padding: 8px 12px; border-radius: 0 8px 8px 0; font-size: 0.95rem; }
+details.hint code, .task code, .card code { font-family: var(--mono); font-size: 0.88em; background: rgba(24, 33, 58, 0.07); padding: 1px 4px; border-radius: 4px; }
+@media (max-width: 700px) { details.hint { margin-left: 0; } }
+
+/* Header pills */
+.head-pills { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.progress-pill {
+  font-size: 0.9rem; padding: 6px 12px; border-radius: 999px; background: var(--ink); color: #fff;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.progress-pill[data-complete="yes"] { background: var(--green); }
+
+/* Key words */
+.keywords { margin: 18px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px 18px; }
+.keywords div { border-left: 3px solid var(--accent); padding: 2px 0 2px 10px; }
+.keywords dt { font-weight: 700; }
+.keywords dd { margin: 0; color: var(--muted); font-size: 0.9rem; line-height: 1.35; }
+
+/* Quiz */
+.quiz { display: grid; gap: 14px; }
+.quiz-q { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px 14px 56px; }
+.quiz-q > p:first-of-type { margin: 0 0 10px; font-weight: 700; }
+.quiz-num { position: absolute; left: 16px; top: 14px; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-weight: 700; }
+.quiz-opts { display: grid; gap: 6px; }
+.quiz-opt { font: inherit; text-align: left; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); cursor: pointer; }
+.quiz-opt:hover:not(:disabled) { border-color: var(--accent); }
+.quiz-opt.right { background: #e3f6ee; border-color: var(--green); font-weight: 700; }
+.quiz-opt.wrong { background: #fde8e9; border-color: var(--red); text-decoration: line-through; color: var(--muted); }
+.quiz-opt:disabled { cursor: default; }
+.quiz-q .why { margin: 10px 0 0; padding: 8px 12px; background: #e3f6ee; border-radius: 8px; font-size: 0.95rem; }
+
+/* Teacher mode */
+.teacher-bar {
+  position: sticky; top: 0; z-index: 10; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  padding: 8px 20px; background: var(--marker); color: var(--ink); font-size: 0.95rem;
+}
+.teacher-bar span { flex: 1; }
+.cell-bar .btn.solution { border-color: var(--marker); color: var(--marker); }
+
+.footer-tools { margin-top: 8px; }
+.linkish { font: inherit; font-size: 0.8rem; background: none; border: 0; padding: 0; color: var(--muted); text-decoration: underline; cursor: pointer; }
+
+/* Cards */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+.card h3 { margin: 0 0 6px; font-size: 1.1rem; }
+.card p { margin: 0 0 10px; }
+.card .q { border-top: 1px solid var(--grid); padding-top: 8px; font-size: 0.95rem; color: var(--muted); }
+
+footer.credits { margin-top: 64px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 0.8rem; color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before { animation: none !important; transition: none !important; }
+}
+.activity.extra { counter-increment: none; }
+
+.cell-note { margin: 0; padding: 8px 12px; font-size: 0.9rem; background: var(--marker-soft); border-top: 1px solid var(--line); color: var(--ink); }
+.cell-note .linkish { margin-left: 4px; font-size: 0.9rem; color: var(--accent); font-weight: 700; }
+
+</style>
+</head>
+<body>
+<div class="page">
+<header class="lesson-head">
+  <div>
+    <a class="home" href="../">How Machines Learn</a>
+    <div class="titles"><span class="lesson-num">3</span><h1>Build a brain cell</h1></div>
+  </div>
+  <span class="py-status" data-state="loading" role="status">Loading Python…</span>
+</header>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&display=swap");
+/* Lesson 3 has its own look, a lab notebook: cool graph paper, emerald ink for
+   "fires / adds", coral highlights, a neuron sketch in the header and a
+   characterful grotesque for headings. */
+:root {
+  --paper: #f4f7f6;
+  --card: #fdfefd;
+  --ink: #17212a;
+  --muted: #56616a;
+  --grid: #d9e4e2;
+  --line: #c9d6d3;
+  --accent: #0f7a5f;
+  --accent-soft: #dcefe8;
+  --marker: #ee7a5f;
+  --marker-soft: #fde4dc;
+  --code-bg: #11201c;
+  --out-bg: #0b1714;
+  --plot-grid: #e6eeec;
+  --plot-axis: #93a6a2;
+  --display: "Bricolage Grotesque", "Atkinson Hyperlegible", system-ui, sans-serif;
+  --trail: #9fcfbf;
+}
+body {
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(rgba(15, 122, 95, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 122, 95, 0.055) 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+.lesson-head {
+  border-bottom: 4px solid var(--accent);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='560' height='170' viewBox='0 0 560 170'%3E %3Cg fill='none' stroke='%230f7a5f' stroke-opacity='0.22' stroke-width='2' stroke-linecap='round'%3E %3Cpath d='M300 85 C270 70 245 52 215 40 M245 52 C238 38 230 25 222 14 M215 40 C195 36 178 30 160 22'/%3E %3Cpath d='M300 85 C268 90 240 96 205 104 M240 96 C228 110 214 120 196 132 M205 104 C186 100 168 102 148 96'/%3E %3Cpath d='M305 80 C300 60 296 42 300 20 M298 48 C310 36 318 28 330 22'/%3E %3Cpath d='M305 92 C302 112 296 128 286 150 M300 118 C312 130 320 138 334 146'/%3E %3Cpath d='M322 85 L360 85'/%3E %3C/g%3E %3Ccircle cx='307' cy='85' r='16' fill='%230f7a5f' fill-opacity='0.14' stroke='%230f7a5f' stroke-opacity='0.3' stroke-width='2'/%3E %3Cg fill='%230f7a5f' fill-opacity='0.13' stroke='%230f7a5f' stroke-opacity='0.28' stroke-width='1.5'%3E %3Crect x='364' y='79' width='34' height='12' rx='6'/%3E%3Crect x='404' y='79' width='34' height='12' rx='6'/%3E%3Crect x='444' y='79' width='34' height='12' rx='6'/%3E %3C/g%3E %3Cg fill='none' stroke='%230f7a5f' stroke-opacity='0.22' stroke-width='2' stroke-linecap='round'%3E %3Cpath d='M480 85 C500 85 512 74 528 64 M500 85 C514 92 526 100 540 108 M510 85 L548 86'/%3E %3C/g%3E%3C/svg%3E") right 8px / 470px 143px no-repeat;
+}
+.lesson-head h1, .activity > h2, .quiz h3 { font-family: var(--display); letter-spacing: -0.02em; }
+.lesson-head h1 { font-size: 2.5rem; font-weight: 800; }
+.lesson-num { font-family: var(--display); color: var(--marker); font-weight: 800; }
+.activity > h2 { font-size: 1.55rem; font-weight: 700; gap: 14px; }
+.activity > h2::before {
+  width: 36px; height: 36px; border-radius: 50%; background: var(--accent);
+  font-family: var(--display); font-weight: 800; font-size: 1.1rem;
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+.activity.extra > h2::before { background: var(--marker); color: var(--ink); box-shadow: 0 0 0 4px var(--marker-soft); }
+@media (min-width: 701px) {
+  .activity { position: relative; }
+  .activity::before {
+    content: ""; position: absolute; left: 17px; top: 52px; bottom: -38px;
+    border-left: 3px dotted var(--trail); pointer-events: none;
+  }
+  .activity:last-of-type::before { display: none; }
+}
+.keywords { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.keywords div { border-left-color: var(--marker); }
+.keywords dt { font-family: var(--display); font-weight: 700; }
+.btn.primary:hover { background: #0b6550; border-color: #0b6550; }
+.panel { border-radius: 14px; box-shadow: 0 10px 24px -20px rgba(17, 32, 28, 0.5); }
+.readout .k { font: 700 0.68rem/1.3 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
+.readout .v { font-family: var(--mono); font-size: 1.35rem; }
+.readout.good { background: var(--accent-soft); border-color: var(--accent); }
+details.hint summary { font: 700 0.8rem/1.4 var(--mono); letter-spacing: 0.04em; text-transform: uppercase; }
+.cell { border-color: #08130f; box-shadow: 0 14px 26px -22px rgba(8, 19, 15, 0.9); }
+.cell-bar { background: #0d2a22; }
+.cell-bar .cell-title { font-family: var(--mono); font-size: 0.85rem; letter-spacing: 0.02em; color: #e7f3ef; }
+.cell.running .cell-bar { background: #124034; }
+.checks { background: #eaf4f0; border-top-color: #08130f; }
+.quiz h3 { font-size: 1.3rem; }
+.activity > h3.sub { font-family: var(--display); font-size: 1.25rem; font-weight: 700; margin: 30px 0 6px 44px; padding-top: 14px; border-top: 2px dotted var(--trail); }
+@media (max-width: 700px) { .lesson-head h1 { font-size: 2rem; } .activity > h2 { font-size: 1.35rem; } .activity > h3.sub { margin-left: 0; } }
+.sum-line { margin: 10px 0 0; padding: 8px 12px; background: var(--paper); border-radius: 8px; font-size: 0.95rem; color: var(--muted); }
+.sum-line .calc { font-family: var(--mono); font-size: 0.92em; color: var(--ink); overflow-wrap: anywhere; }
+.sum-line .verdict { display: block; margin-top: 2px; }
+.sum-line .verdict b.yes { color: var(--green); }
+.days-score { margin: 12px 0 0; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--grid); font-size: 0.95rem; color: var(--muted); }
+.days-score b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.days-score.all { background: var(--accent-soft); border-color: var(--green); color: var(--ink); font-size: 1.05rem; animation: pop 0.45s ease-out; }
+.days-score.all b { color: var(--green); }
+@keyframes pop { 0% { transform: scale(0.96); } 60% { transform: scale(1.02); } 100% { transform: scale(1); } }
+.table-scroll { overflow-x: auto; }
+.gates { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 620px) { .gates { grid-template-columns: minmax(0, 1fr); max-width: 300px; } }
+.gate h3 { margin: 0 0 4px; font-size: 1.05rem; }
+.gate-cap { margin: 6px 0 0; font-size: 0.9rem; color: var(--muted); min-height: 2.7em; }
+.gate-cap.ok { color: var(--green); font-weight: 700; }
+.gate-cap.bad { color: var(--red); font-weight: 700; }
+.net-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 10px 0 0; font-size: 0.9rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--ink); }
+.legend i.dash { width: 22px; height: 0; border-radius: 0; border: 0; border-top: 2px dashed var(--ink); }
+</style>
+<dl class="keywords">
+  <div><dt>Neuron</dt><dd>Adds up its inputs times their weights, plus a bias, then decides.</dd></div>
+  <div><dt>Weight</dt><dd>How much one input counts. Negative means it counts against.</dd></div>
+  <div><dt>Bias</dt><dd>A number added to the total. It makes the neuron fire more or less easily.</dd></div>
+  <div><dt>Fires (activation)</dt><dd>The neuron says 1 (yes) when its total is above 0.</dd></div>
+  <div><dt>Layer</dt><dd>A group of neurons side by side. One layer feeds the next.</dd></div>
+</dl>
+
+<section class="activity">
+  <h2>Should I go to the beach?</h2>
+  <p class="task">Set the weights and the bias so your neuron makes the <b>same decisions as your friend</b> on all 8 days. Click the inputs to switch them on and off.</p>
+  <div class="panel split wide-side">
+    <div>
+      <canvas class="plot" id="neuron-plot" aria-label="Diagram of one neuron with three inputs"></canvas>
+      <p class="sum-line" id="sum-line" aria-live="polite"></p>
+    </div>
+    <div>
+      <div class="controls" style="margin-top: 0">
+        <label class="toggle"><input type="checkbox" id="in-0" checked> Sunny</label>
+        <label class="toggle"><input type="checkbox" id="in-1"> Warm</label>
+        <label class="toggle"><input type="checkbox" id="in-2" checked> Friends going</label>
+      </div>
+      <div class="control" style="margin-top: 12px"><label for="w-0">Weight: sunny <output id="w-0-out"></output></label><input type="range" id="w-0" min="-5" max="5" step="0.1" value="2"></div>
+      <div class="control"><label for="w-1">Weight: warm <output id="w-1-out"></output></label><input type="range" id="w-1" min="-5" max="5" step="0.1" value="0"></div>
+      <div class="control"><label for="w-2">Weight: friends going <output id="w-2-out"></output></label><input type="range" id="w-2" min="-5" max="5" step="0.1" value="1"></div>
+      <div class="control"><label for="bias">Bias <output id="bias-out"></output></label><input type="range" id="bias" min="-5" max="5" step="0.1" value="-0.5"></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="table-scroll">
+      <table class="data" id="days-table">
+        <thead><tr><th>Day</th><th>Sunny</th><th>Warm</th><th>Friends going</th><th>Friend went?</th><th>Your neuron</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="days-score" id="days-score" aria-live="polite"></p>
+  </div>
+</section>
+
+<section class="activity">
+  <h2>The same neuron in Python</h2>
+  <p class="task">Here is the same neuron as a Python function. <b>Run it.</b> Then type in the weights and bias from your sliders and run it again: it should say 8 / 8.</p>
+<script type="text/x-python" data-cell="beach" data-title="The same neuron in Python">
+def neuron(inputs, weights, bias):
+    total = bias
+    for x, w in zip(inputs, weights):
+        total = total + x * w
+    if total > 0:
+        return 1        # fires: go to the beach
+    return 0            # stay at home
+
+weights = [2.0, 0.0, 1.0]   # sunny, warm, friends going
+bias = -0.5
+
+# What your friend really did: (sunny, warm, friends going) -> went (1) or not (0)
+days = [
+    ((0, 0, 0), 0), ((1, 0, 0), 0), ((0, 1, 0), 0), ((0, 0, 1), 0),
+    ((1, 1, 0), 1), ((1, 0, 1), 0), ((0, 1, 1), 1), ((1, 1, 1), 1),
+]
+
+matches = 0
+for inputs, went in days:
+    guess = neuron(inputs, weights, bias)
+    matches += (guess == went)
+    print(inputs, " friend:", went, " neuron:", guess, " ok" if guess == went else " wrong")
+
+print(f"{matches} / {len(days)} days match")
+board.set_neuron(weights, bias)      # copies your weights to the diagram above
+
+# Task 1: put your slider numbers in weights and bias and run again,
+#         so that all 8 days match.
+</script>
+<script type="text/x-python" data-check="beach">
+def _beach_matches():
+    try:
+        return sum(neuron(i, weights, bias) == went for i, went in days)
+    except Exception:
+        return 0
+check("Task 1: all 8 days match in Python",
+      defined("neuron", "weights", "bias", "days") and _beach_matches() == 8,
+      f"{_beach_matches() if defined('neuron', 'weights', 'bias', 'days') else 0} / 8 days match. Copy the weights and bias from your sliders.")
+</script>
+<script type="text/x-python" data-solution="beach">
+def neuron(inputs, weights, bias):
+    total = bias
+    for x, w in zip(inputs, weights):
+        total = total + x * w
+    if total > 0:
+        return 1        # fires: go to the beach
+    return 0            # stay at home
+
+weights = [1.0, 2.0, 1.0]   # warm counts most
+bias = -2.5                 # warm alone (2.0) is not enough; warm plus one more is
+
+# What your friend really did: (sunny, warm, friends going) -> went (1) or not (0)
+days = [
+    ((0, 0, 0), 0), ((1, 0, 0), 0), ((0, 1, 0), 0), ((0, 0, 1), 0),
+    ((1, 1, 0), 1), ((1, 0, 1), 0), ((0, 1, 1), 1), ((1, 1, 1), 1),
+]
+
+matches = 0
+for inputs, went in days:
+    guess = neuron(inputs, weights, bias)
+    matches += (guess == went)
+    print(inputs, " friend:", went, " neuron:", guess, " ok" if guess == went else " wrong")
+
+print(f"{matches} / {len(days)} days match")
+board.set_neuron(weights, bias)      # copies your weights to the diagram above
+</script>
+</section>
+
+<section class="activity">
+  <h2>Logic gates with one neuron</h2>
+  <p class="task">Inputs are 0 or 1. Find weights and a bias so the neuron works as an <b>AND</b> gate and as an <b>OR</b> gate. Each one draws a single straight line.</p>
+  <div class="panel gates">
+    <div class="gate"><h3>AND</h3><canvas class="plot" id="gate-AND-plot" aria-label="AND truth table as four points with the neuron's line"></canvas><p class="gate-cap" id="gate-AND-cap">Fires only when a and b are both 1.</p></div>
+    <div class="gate"><h3>OR</h3><canvas class="plot" id="gate-OR-plot" aria-label="OR truth table as four points with the neuron's line"></canvas><p class="gate-cap" id="gate-OR-cap">Fires when a or b (or both) is 1.</p></div>
+    <div class="gate"><h3>XOR</h3><canvas class="plot" id="gate-XOR-plot" aria-label="XOR truth table as four points"></canvas><p class="gate-cap" id="gate-XOR-cap">Fires when exactly one of a and b is 1.</p></div>
+  </div>
+  <details class="hint"><summary>Hint</summary><div>Try weights of <code>[1, 1]</code> for both. For AND, choose a bias so that <code>1 + 1 + bias</code> is above 0 but <code>1 + bias</code> is not. For OR, <code>1 + bias</code> must be above 0 but <code>0 + bias</code> must not.</div></details>
+<script type="text/x-python" data-cell="gates" data-title="AND and OR" data-needs="beach">
+# Truth tables: (a, b) -> the answer we want
+AND = [((0, 0), 0), ((0, 1), 0), ((1, 0), 0), ((1, 1), 1)]
+OR  = [((0, 0), 0), ((0, 1), 1), ((1, 0), 1), ((1, 1), 1)]
+
+def test_gate(name, table, weights, bias):
+    print(name)
+    print(" a  b | want | neuron")
+    right = 0
+    for inputs, want in table:
+        got = neuron(inputs, weights, bias)
+        right += (got == want)
+        print(f" {inputs[0]}  {inputs[1]} |  {want}   |  {got}", "" if got == want else "  wrong")
+    print(f"{right} / 4 rows right\n")
+    board.show_gate(name, weights, bias)
+
+# Task 1: make the neuron an AND gate
+and_weights = [0.0, 0.0]
+and_bias = 0.0
+
+# Task 2: make the neuron an OR gate
+or_weights = [0.0, 0.0]
+or_bias = 0.0
+
+test_gate("AND", AND, and_weights, and_bias)
+test_gate("OR", OR, or_weights, or_bias)
+</script>
+<script type="text/x-python" data-check="gates">
+def _gate_ok(wname, bname, table):
+    if not defined(wname, bname):
+        return False
+    try:
+        w, b = globals()[wname], globals()[bname]
+        return len(w) == 2 and all((1 if x[0] * w[0] + x[1] * w[1] + b > 0 else 0) == want for x, want in table)
+    except Exception:
+        return False
+check("Task 1: AND gate, all 4 rows right",
+      _gate_ok("and_weights", "and_bias", [((0, 0), 0), ((0, 1), 0), ((1, 0), 0), ((1, 1), 1)]),
+      "Only 1 and 1 should get the total above 0. A negative bias helps.")
+check("Task 2: OR gate, all 4 rows right",
+      _gate_ok("or_weights", "or_bias", [((0, 0), 0), ((0, 1), 1), ((1, 0), 1), ((1, 1), 1)]),
+      "A single 1 should be enough to get above 0, but 0 and 0 should not.")
+</script>
+<script type="text/x-python" data-solution="gates">
+# Truth tables: (a, b) -> the answer we want
+AND = [((0, 0), 0), ((0, 1), 0), ((1, 0), 0), ((1, 1), 1)]
+OR  = [((0, 0), 0), ((0, 1), 1), ((1, 0), 1), ((1, 1), 1)]
+
+def test_gate(name, table, weights, bias):
+    print(name)
+    print(" a  b | want | neuron")
+    right = 0
+    for inputs, want in table:
+        got = neuron(inputs, weights, bias)
+        right += (got == want)
+        print(f" {inputs[0]}  {inputs[1]} |  {want}   |  {got}", "" if got == want else "  wrong")
+    print(f"{right} / 4 rows right\n")
+    board.show_gate(name, weights, bias)
+
+# AND: only 1 + 1 = 2 beats a bias of -1.5
+and_weights = [1.0, 1.0]
+and_bias = -1.5
+
+# OR: a single 1 beats a bias of -0.5
+or_weights = [1.0, 1.0]
+or_bias = -0.5
+
+test_gate("AND", AND, and_weights, and_bias)
+test_gate("OR", OR, or_weights, or_bias)
+</script>
+  <p class="task">Now XOR. Let the computer try every weight and bias from −2 to 2 in steps of 0.5. Then try the same search on AND (task 3).</p>
+<script type="text/x-python" data-cell="search" data-title="Search for an XOR neuron" data-needs="gates">
+XOR = [((0, 0), 0), ((0, 1), 1), ((1, 0), 1), ((1, 1), 0)]
+values = [v / 2 for v in range(-4, 5)]       # -2.0, -1.5, ... 1.5, 2.0
+
+table = XOR          # try AND or OR here too
+tried = 0
+found = 0
+for w_a in values:
+    for w_b in values:
+        for bias_try in values:
+            tried += 1
+            if all(neuron(inputs, [w_a, w_b], bias_try) == want for inputs, want in table):
+                found += 1
+
+print(f"Tried {tried} weights and biases. {found} of them work.")
+board.show_search(table == XOR, tried, found)
+
+# Task 3: change table = XOR to table = AND. How many of the 729 tries make
+#         an AND gate? Store the number in and_found. Why so many for AND
+#         and none at all for XOR?
+</script>
+<script type="text/x-python" data-check="search">
+def _count(tab):
+    vals = [v / 2 for v in range(-4, 5)]
+    return sum(all(neuron(i, [wa, wb], bt) == want for i, want in tab) for wa in vals for wb in vals for bt in vals)
+_and_total = _count([((0, 0), 0), ((0, 1), 0), ((1, 0), 0), ((1, 1), 1)])
+check("Task 3: how many tries make an AND gate?",
+      defined("and_found") and and_found == _and_total,
+      "Set table = AND, run the search, and store the number it prints in and_found.")
+</script>
+<script type="text/x-python" data-solution="search">
+XOR = [((0, 0), 0), ((0, 1), 1), ((1, 0), 1), ((1, 1), 0)]
+values = [v / 2 for v in range(-4, 5)]       # -2.0, -1.5, ... 1.5, 2.0
+
+table = AND
+tried = 0
+found = 0
+for w_a in values:
+    for w_b in values:
+        for bias_try in values:
+            tried += 1
+            if all(neuron(inputs, [w_a, w_b], bias_try) == want for inputs, want in table):
+                found += 1
+
+print(f"Tried {tried} weights and biases. {found} of them work.")
+board.show_search(table == XOR, tried, found)
+and_found = found
+# AND has many answers: any line that cuts off the (1, 1) corner works.
+# XOR has none: no single straight line puts (0, 1) and (1, 0) on one side
+# and (0, 0) and (1, 1) on the other.
+</script>
+</section>
+
+<section class="activity">
+  <h2>Let the neuron learn by itself</h2>
+  <p class="task">Apples or lemons? Every time the neuron gets a fruit wrong, it <b>nudges its weights</b>. Watch the dividing line move. Then use the trained weights on the <b>mystery fruit</b>.</p>
+  <div class="panel split">
+    <canvas class="plot" id="fruit-plot" aria-label="Apples and lemons with the neuron's dividing line"></canvas>
+    <div class="readouts">
+      <div class="readout"><div class="k">Round (epoch)</div><div class="v" id="fruit-epoch">–</div></div>
+      <div class="readout score"><div class="k">Mistakes this round</div><div class="v" id="fruit-mistakes">–</div></div>
+      <p class="note">Red: apple. Yellow: lemon. The ring with a question mark is the mystery fruit.</p>
+    </div>
+  </div>
+  <details class="hint"><summary>Hint for task 1</summary><div>Work out the total: <code>w1 * 1.6 + w2 * 0.3 + b</code>. If it is above 0 the neuron fires, which means apple (1). The point is close to the line, so calculate rather than guess.</div></details>
+<script type="text/x-python" data-cell="perceptron" data-title="Train a neuron (the perceptron rule)">
+async def train_perceptron(points, plot, epochs=20, learning_rate=0.1):
+    w1, w2, b = 0.0, 0.0, 0.0
+    for epoch in range(1, epochs + 1):
+        mistakes = 0
+        for x1, x2, label in points:
+            guess = 1 if w1 * x1 + w2 * x2 + b > 0 else 0     # guess
+            error = label - guess                               # check: +1, 0 or -1
+            if error != 0:                                      # nudge
+                mistakes += 1
+                w1 += learning_rate * error * x1
+                w2 += learning_rate * error * x2
+                b += learning_rate * error
+        board.show_boundary(plot, w1, w2, b, epoch, mistakes)
+        await asyncio.sleep(0.3)
+        if mistakes == 0:
+            print(f"Learned it in {epoch} rounds!")
+            break
+    print(f"w1 = {w1:.3f}, w2 = {w2:.3f}, b = {b:.3f}, mistakes in last round: {mistakes}")
+    return w1, w2, b
+
+# each fruit is (weight in hundreds of grams, sourness from 0 to 1, label)
+# label 1 = apple, 0 = lemon
+print(fruit[:3])
+learning_rate = 0.1
+w1, w2, b = await train_perceptron(fruit, "fruit", learning_rate=learning_rate)
+
+# Task 1: a mystery fruit weighs 1.6 (hundreds of grams) and has sourness 0.3.
+#         Use w1, w2 and b to work out what the neuron says.
+#         Store 1 (apple) or 0 (lemon) in mystery.
+# Task 2 (extra): change learning_rate to 1.0 and run again.
+#         Does it still learn? What happens to the weights?
+</script>
+<script type="text/x-python" data-check="perceptron">
+_trained = defined("w1", "w2", "b")
+_want = (1 if w1 * 1.6 + w2 * 0.3 + b > 0 else 0) if _trained else None
+check("Task 1: apple or lemon? Store the answer in mystery",
+      _trained and defined("mystery") and mystery == _want,
+      "mystery should be 1 if w1 * 1.6 + w2 * 0.3 + b is above 0, otherwise 0.")
+check("Task 2 (extra): still learns with a different learning rate",
+      _trained and defined("learning_rate") and learning_rate != 0.1
+      and all((1 if w1 * x1 + w2 * x2 + b > 0 else 0) == label for x1, x2, label in fruit),
+      "Change learning_rate (for example to 1.0) and run the cell again.")
+</script>
+<script type="text/x-python" data-solution="perceptron">
+async def train_perceptron(points, plot, epochs=20, learning_rate=0.1):
+    w1, w2, b = 0.0, 0.0, 0.0
+    for epoch in range(1, epochs + 1):
+        mistakes = 0
+        for x1, x2, label in points:
+            guess = 1 if w1 * x1 + w2 * x2 + b > 0 else 0     # guess
+            error = label - guess                               # check: +1, 0 or -1
+            if error != 0:                                      # nudge
+                mistakes += 1
+                w1 += learning_rate * error * x1
+                w2 += learning_rate * error * x2
+                b += learning_rate * error
+        board.show_boundary(plot, w1, w2, b, epoch, mistakes)
+        await asyncio.sleep(0.3)
+        if mistakes == 0:
+            print(f"Learned it in {epoch} rounds!")
+            break
+    print(f"w1 = {w1:.3f}, w2 = {w2:.3f}, b = {b:.3f}, mistakes in last round: {mistakes}")
+    return w1, w2, b
+
+# each fruit is (weight in hundreds of grams, sourness from 0 to 1, label)
+# label 1 = apple, 0 = lemon
+print(fruit[:3])
+learning_rate = 1.0
+w1, w2, b = await train_perceptron(fruit, "fruit", learning_rate=learning_rate)
+
+# Task 1: the mystery fruit
+total = w1 * 1.6 + w2 * 0.3 + b
+mystery = 1 if total > 0 else 0
+print(f"Mystery fruit: total = {total:.3f}, so it is", "an apple" if mystery == 1 else "a lemon")
+
+# Task 2: with learning_rate = 1.0 it still learns in the same number of rounds.
+# Every weight is just 10 times bigger, so the line is in exactly the same place.
+</script>
+</section>
+
+<section class="activity">
+  <h2>A puzzle one neuron can't solve</h2>
+  <p class="task">Same neuron, new data: the XOR pattern. Can a <b>single straight line</b> separate the two colours? Then measure how well the line it ends up with really does (task 1).</p>
+  <div class="panel split">
+    <canvas class="plot" id="xor-plot" aria-label="The XOR pattern with the neuron's dividing line"></canvas>
+    <div class="readouts">
+      <div class="readout"><div class="k">Round (epoch)</div><div class="v" id="xor-epoch">–</div></div>
+      <div class="readout score"><div class="k">Mistakes this round</div><div class="v" id="xor-mistakes">–</div></div>
+      <p class="note">Green: 1. Yellow: 0.</p>
+    </div>
+  </div>
+<script type="text/x-python" data-cell="xor" data-title="Train on the XOR pattern" data-needs="perceptron">
+xor_w1, xor_w2, xor_b = await train_perceptron(xor_points, "xor", epochs=15)
+# Try more epochs, or a different learning_rate. Does the mistakes count ever reach 0?
+
+# Task 1: how good is the line the neuron ended up with? Count how many of the
+#         120 points it gets right (fires when the label is 1, stays quiet when
+#         it is 0) and store the count in xor_right. Is that better than
+#         guessing at random?
+</script>
+<script type="text/x-python" data-check="xor">
+_ok = defined("xor_w1", "xor_w2", "xor_b")
+_right_now = sum((1 if xor_w1 * a + xor_w2 * c + xor_b > 0 else 0) == l for a, c, l in xor_points) if _ok else None
+check("Task 1: count the XOR points the line gets right",
+      _ok and defined("xor_right") and xor_right == _right_now,
+      "Loop over xor_points: for each (x1, x2, label) work out the neuron's guess with xor_w1, xor_w2 and xor_b, and add 1 when it equals label.")
+</script>
+<script type="text/x-python" data-solution="xor">
+xor_w1, xor_w2, xor_b = await train_perceptron(xor_points, "xor", epochs=15)
+
+xor_right = 0
+for x1, x2, label in xor_points:
+    guess = 1 if xor_w1 * x1 + xor_w2 * x2 + xor_b > 0 else 0
+    if guess == label:
+        xor_right += 1
+print(f"The line gets {xor_right} / {len(xor_points)} points right")
+# About as good as guessing: one straight line can get at most about 3 of the
+# 4 clusters right, and the training keeps flipping between them.
+</script>
+</section>
+
+<section class="activity">
+  <h2>Many neurons together</h2>
+  <p class="task">A small network: a layer of <b>hidden neurons</b> feeding one output neuron. Each hidden neuron draws one dashed line; the output neuron combines them. Find the <b>fewest hidden neurons</b> that get every point right.</p>
+  <div class="panel">
+    <div class="net-pair">
+      <canvas class="plot" id="net-plot" aria-label="What the network predicts across the whole map, with each hidden neuron's line"></canvas>
+      <canvas class="plot" id="net-loss" aria-label="How wrong the network is after each round"></canvas>
+    </div>
+    <p class="legend"><span><i style="background: #0f7a5f"></i> 1 (inside)</span><span><i style="background: #f2c230"></i> 0 (outside)</span><span><i class="dash"></i> one hidden neuron's line</span></p>
+  </div>
+  <details class="hint"><summary>Hint for task 1</summary><div>One line can't go round a circle. How many straight lines do you need to draw a shape around the middle? Try 3, then 4.</div></details>
+<script type="text/x-python" data-cell="network" data-title="A two-layer neural network">
+import math, random
+
+hidden_size = 2          # how many hidden neurons? Try 1, 2, 3, 4, 8
+data = circle_points     # inside the circle = 1, outside = 0
+
+async def train_network(hidden_size, data, plot, learning_rate=0.5, rounds=300):
+    random.seed(1)                                   # same random start every time
+    W1 = [[random.uniform(-1, 1), random.uniform(-1, 1)] for _ in range(hidden_size)]
+    b1 = [0.0] * hidden_size                         # hidden layer: 2 weights + a bias each
+    W2 = [random.uniform(-1, 1) for _ in range(hidden_size)]
+    b2 = 0.0                                         # output neuron: 1 weight per hidden neuron
+
+    def predict(x1, x2):
+        hidden = [math.tanh(w[0] * x1 + w[1] * x2 + b) for w, b in zip(W1, b1)]
+        total = sum(w * h for w, h in zip(W2, hidden)) + b2
+        return 1 / (1 + math.exp(-total)), hidden    # a number from 0 to 1
+
+    board.set_points(plot, data)
+    losses = []
+    for r in range(rounds + 1):
+        loss = 0
+        for x1, x2, label in data:
+            out, hidden = predict(x1, x2)
+            loss += (out - label) ** 2 / len(data)
+            # backpropagation: share out the blame and nudge every weight
+            d_out = (out - label) * out * (1 - out)
+            for j in range(hidden_size):
+                d_hidden = d_out * W2[j] * (1 - hidden[j] ** 2)
+                W2[j] -= learning_rate * d_out * hidden[j]
+                W1[j][0] -= learning_rate * d_hidden * x1
+                W1[j][1] -= learning_rate * d_hidden * x2
+                b1[j] -= learning_rate * d_hidden
+            b2 -= learning_rate * d_out
+        losses.append(loss)
+        if r % 15 == 0:
+            board.show_network(plot, W1, b1, W2, b2, losses)
+            await asyncio.sleep(0.01)
+
+    correct = sum((predict(x1, x2)[0] > 0.5) == (label == 1) for x1, x2, label in data)
+    print(f"Hidden neurons: {hidden_size}. Points correct: {correct} / {len(data)}")
+    return predict
+
+predict = await train_network(hidden_size, data, "net")
+
+# Task 1: change hidden_size until every circle point is correct.
+#         What is the fewest hidden neurons that does it?
+</script>
+<script type="text/x-python" data-check="network">
+_net_ok = defined("predict", "data", "hidden_size")
+try:
+    _right = sum((predict(x1, x2)[0] > 0.5) == (label == 1) for x1, x2, label in circle_points) if _net_ok else 0
+except Exception:
+    _right = 0
+check("Task 1: every circle point correct",
+      _net_ok and data is circle_points and _right == len(circle_points),
+      f"{_right} / {len(circle_points)} circle points correct. Try more hidden neurons."
+      if defined("data") and data is circle_points else "Keep data = circle_points for this task.")
+</script>
+<script type="text/x-python" data-solution="network">
+import math, random
+
+hidden_size = 4          # 3 gets close (177 / 180); 4 gets every point
+data = circle_points     # inside the circle = 1, outside = 0
+
+async def train_network(hidden_size, data, plot, learning_rate=0.5, rounds=300):
+    random.seed(1)                                   # same random start every time
+    W1 = [[random.uniform(-1, 1), random.uniform(-1, 1)] for _ in range(hidden_size)]
+    b1 = [0.0] * hidden_size                         # hidden layer: 2 weights + a bias each
+    W2 = [random.uniform(-1, 1) for _ in range(hidden_size)]
+    b2 = 0.0                                         # output neuron: 1 weight per hidden neuron
+
+    def predict(x1, x2):
+        hidden = [math.tanh(w[0] * x1 + w[1] * x2 + b) for w, b in zip(W1, b1)]
+        total = sum(w * h for w, h in zip(W2, hidden)) + b2
+        return 1 / (1 + math.exp(-total)), hidden    # a number from 0 to 1
+
+    board.set_points(plot, data)
+    losses = []
+    for r in range(rounds + 1):
+        loss = 0
+        for x1, x2, label in data:
+            out, hidden = predict(x1, x2)
+            loss += (out - label) ** 2 / len(data)
+            # backpropagation: share out the blame and nudge every weight
+            d_out = (out - label) * out * (1 - out)
+            for j in range(hidden_size):
+                d_hidden = d_out * W2[j] * (1 - hidden[j] ** 2)
+                W2[j] -= learning_rate * d_out * hidden[j]
+                W1[j][0] -= learning_rate * d_hidden * x1
+                W1[j][1] -= learning_rate * d_hidden * x2
+                b1[j] -= learning_rate * d_hidden
+            b2 -= learning_rate * d_out
+        losses.append(loss)
+        if r % 15 == 0:
+            board.show_network(plot, W1, b1, W2, b2, losses)
+            await asyncio.sleep(0.01)
+
+    correct = sum((predict(x1, x2)[0] > 0.5) == (label == 1) for x1, x2, label in data)
+    print(f"Hidden neurons: {hidden_size}. Points correct: {correct} / {len(data)}")
+    return predict
+
+predict = await train_network(hidden_size, data, "net")
+</script>
+  <p class="task">Now use the same network on the XOR pattern from activity 5. Can a <b>tiny</b> network solve what one neuron couldn't?</p>
+  <div class="panel">
+    <div class="net-pair">
+      <canvas class="plot" id="net2-plot" aria-label="The network's answer for the XOR pattern, with each hidden neuron's line"></canvas>
+      <canvas class="plot" id="net2-loss" aria-label="How wrong the network is after each round"></canvas>
+    </div>
+  </div>
+<script type="text/x-python" data-cell="network2" data-title="A network for XOR" data-needs="network">
+hidden_size = 1
+data = xor_points
+predict = await train_network(hidden_size, data, "net2")
+
+# Task 2: solve XOR with only 2 hidden neurons. Look at the two dashed lines.
+</script>
+<script type="text/x-python" data-check="network2">
+_net_ok = defined("predict", "data", "hidden_size")
+try:
+    _right = sum((predict(x1, x2)[0] > 0.5) == (label == 1) for x1, x2, label in xor_points) if _net_ok else 0
+    _used = len(predict(0, 0)[1]) if _net_ok else 99
+except Exception:
+    _right, _used = 0, 99
+check("Task 2: solve XOR with only 2 hidden neurons",
+      _net_ok and data is xor_points and _used <= 2 and _right == len(xor_points),
+      ("Keep data = xor_points for this task." if not (defined("data") and data is xor_points)
+       else "Use 2 hidden neurons or fewer." if _used > 2
+       else f"{_right} / {len(xor_points)} points correct. Try hidden_size = 2."))
+</script>
+<script type="text/x-python" data-solution="network2">
+hidden_size = 2
+data = xor_points
+predict = await train_network(hidden_size, data, "net2")
+</script>
+  <p class="note">Want more? Build networks by clicking in <a href="https://playground.tensorflow.org/" target="_blank" rel="noopener">TensorFlow Playground</a>.</p>
+</section>
+
+<section class="activity extra">
+  <h2>Challenges</h2>
+  <p class="task">Two harder puzzles for anyone who finishes. No new ideas: just today's, pushed further.</p>
+
+  <h3 class="sub">Challenge 1: be the learning algorithm</h3>
+  <p class="task">In activity 6 the computer trained 2 hidden neurons to solve XOR. You can wire the same network <b>by hand</b> from the gates you built in activity 3. XOR means "one or the other, but not both": that is <b>OR</b> and <b>NOT-AND</b> at the same time. Choose the weights and biases so <code>xor_net</code> gets all four rows right.</p>
+  <details class="hint"><summary>Hint for challenge 1</summary><div>OR fires when at least one input is 1: weights 1 and 1 with bias −0.5 works. NOT-AND (NAND) is the opposite of AND: make both weights negative and the bias positive. The output neuron is just an AND gate of <code>h1</code> and <code>h2</code>, like the one you built in activity 3.</div></details>
+<script type="text/x-python" data-cell="wire" data-title="Wire XOR by hand">
+def neuron(inputs, weights, bias):
+    total = bias
+    for x, w in zip(inputs, weights):
+        total = total + x * w
+    return 1 if total > 0 else 0
+
+def xor_net(a, b):
+    h1 = neuron([a, b], [0, 0], 0)       # hidden neuron 1: make it an OR gate
+    h2 = neuron([a, b], [0, 0], 0)       # hidden neuron 2: make it NOT-AND
+    return neuron([h1, h2], [0, 0], 0)   # output: fires only when h1 AND h2 fire
+
+print(" a  b | want | your network")
+for a in [0, 1]:
+    for b in [0, 1]:
+        print(f" {a}  {b} |  {a ^ b}   |  {xor_net(a, b)}")
+
+# Challenge 1: replace the zeros (3 pairs of weights and 3 biases) so every
+#              row matches. No training: you are the learning algorithm.
+</script>
+<script type="text/x-python" data-check="wire">
+def _xor_ok():
+    try:
+        return all(xor_net(a, b) == (a ^ b) for a in (0, 1) for b in (0, 1))
+    except Exception:
+        return False
+_rows = 0
+if defined("xor_net"):
+    try:
+        _rows = sum(xor_net(a, b) == (a ^ b) for a in (0, 1) for b in (0, 1))
+    except Exception:
+        _rows = 0
+check("Challenge 1: XOR wired by hand",
+      defined("xor_net") and _xor_ok(),
+      f"{_rows} / 4 rows right. Make h1 an OR gate, h2 a NOT-AND gate, and the output an AND of the two.")
+</script>
+<script type="text/x-python" data-solution="wire">
+def neuron(inputs, weights, bias):
+    total = bias
+    for x, w in zip(inputs, weights):
+        total = total + x * w
+    return 1 if total > 0 else 0
+
+def xor_net(a, b):
+    h1 = neuron([a, b], [1, 1], -0.5)     # OR: fires if at least one input is 1
+    h2 = neuron([a, b], [-1, -1], 1.5)    # NOT-AND: fires unless both inputs are 1
+    return neuron([h1, h2], [1, 1], -1.5) # AND of the two
+
+print(" a  b | want | your network")
+for a in [0, 1]:
+    for b in [0, 1]:
+        print(f" {a}  {b} |  {a ^ b}   |  {xor_net(a, b)}")
+# Each hidden neuron draws one straight line; the output keeps the strip between them.
+</script>
+
+  <h3 class="sub">Challenge 2: three rings</h3>
+  <p class="task">A blob in the middle, a ring around it and another ring outside. The middle blob and the outer ring are 1, the ring between them is 0. Get <b>all 240 points right with 8 hidden neurons or fewer</b>. Then look at the dashed lines: what shape are the hidden neurons drawing together?</p>
+  <div class="panel">
+    <div class="net-pair">
+      <canvas class="plot" id="net3-plot" aria-label="The network's answer for the three rings, with each hidden neuron's line"></canvas>
+      <canvas class="plot" id="net3-loss" aria-label="How wrong the network is after each round"></canvas>
+    </div>
+  </div>
+  <details class="hint"><summary>Hint for challenge 2</summary><div>Change <code>hidden_size</code> and run again, going up one at a time, and write down how many points each size gets right. Watch out: more is not always better, because every network starts from random weights.</div></details>
+<script type="text/x-python" data-cell="rings" data-title="Three rings" data-needs="network">
+hidden_size = 3
+rings_predict = await train_network(hidden_size, rings_points, "net3")
+
+# Challenge 2: get all 240 points right with 8 hidden neurons or fewer.
+#              Try each size in turn. Is more always better?
+</script>
+<script type="text/x-python" data-check="rings">
+_ok = defined("rings_predict")
+try:
+    _right = sum((rings_predict(x1, x2)[0] > 0.5) == (label == 1) for x1, x2, label in rings_points) if _ok else 0
+    _used = len(rings_predict(0, 0)[1]) if _ok else 99
+except Exception:
+    _right, _used = 0, 99
+check("Challenge 2: all 240 ring points with 8 hidden neurons or fewer",
+      _ok and _used <= 8 and _right == len(rings_points),
+      "Use 8 hidden neurons or fewer." if _ok and _used > 8
+      else f"{_right} / {len(rings_points)} points right. Try another hidden_size.")
+</script>
+<script type="text/x-python" data-solution="rings">
+hidden_size = 8      # 6 gets 231 / 240, 7 gets 235, 8 gets all 240 (and 9 drops back to 231!)
+rings_predict = await train_network(hidden_size, rings_points, "net3")
+# Together the dashed lines make a rough polygon around the middle blob and a
+# bigger one inside the outer ring. More neurons is not always better: each
+# network starts from different random weights and can settle somewhere worse.
+</script>
+</section>
+
+<section class="activity">
+  <h2>Check your understanding</h2>
+  <div class="quiz">
+    <div class="quiz-q" data-answer="2">
+      <p>What does a weight do in a neuron?</p>
+      <ol>
+        <li>It switches the neuron on or off when an input changes</li>
+        <li>It sets how much one input counts towards the total</li>
+        <li>It stores the answer the neuron gave last time</li>
+        <li>It counts how many inputs the neuron has</li>
+      </ol>
+      <p class="why">Each input is multiplied by its weight. A big weight means that input matters a lot; a negative weight counts against firing.</p>
+    </div>
+    <div class="quiz-q" data-answer="4">
+      <p>What does the bias do?</p>
+      <ol>
+        <li>It multiplies every input by the same amount to make it bigger</li>
+        <li>It decides which input is the most important one</li>
+        <li>It makes the neuron ignore any input that is 0</li>
+        <li>It moves the total up or down, so the neuron fires more or less easily</li>
+      </ol>
+      <p class="why">The bias is added to the total. A very negative bias means the inputs have to work hard to get the total above 0.</p>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p>Why can't a single neuron learn XOR?</p>
+      <ol>
+        <li>No single straight line puts both 1s on one side and both 0s on the other</li>
+        <li>XOR needs more than two inputs, and this neuron only has two</li>
+        <li>The neuron didn't train for enough rounds to find the line</li>
+        <li>The learning rate was too small to ever reach the answer</li>
+      </ol>
+      <p class="why">The 1s sit in opposite corners, so any straight line leaves at least one point on the wrong side. The search tried 729 settings and found none.</p>
+    </div>
+    <div class="quiz-q" data-answer="3">
+      <p>When a neuron or network trains, what changes?</p>
+      <ol>
+        <li>The training data</li>
+        <li>The inputs it is given</li>
+        <li>Its weights and biases</li>
+        <li>The rule "fire if the total is above 0"</li>
+      </ol>
+      <p class="why">Training is guess, check, nudge: after each mistake the weights and biases are nudged a little. The data and the firing rule stay the same.</p>
+    </div>
+  </div>
+</section>
+
+<script type="text/x-python" id="py-setup">
+import board
+import asyncio
+import math
+import random
+
+_rng = random.Random(7)
+
+fruit = []
+for _ in range(25):   # apples: heavier, not sour
+    fruit.append((round(_rng.uniform(1.4, 2.2), 2), round(_rng.uniform(0.05, 0.45), 2), 1))
+for _ in range(25):   # lemons: lighter, sour
+    fruit.append((round(_rng.uniform(0.7, 1.5), 2), round(_rng.uniform(0.55, 0.95), 2), 0))
+_rng.shuffle(fruit)
+
+xor_points = []
+for cx, cy in [(-0.75, -0.75), (0.75, 0.75), (-0.75, 0.75), (0.75, -0.75)]:
+    for _ in range(30):
+        xor_points.append((round(cx + _rng.gauss(0, 0.22), 3), round(cy + _rng.gauss(0, 0.22), 3), 1 if cx * cy < 0 else 0))
+_rng.shuffle(xor_points)
+
+def _ring_points(bands, n=180):
+    pts = []
+    while len(pts) < n:
+        x, y = _rng.uniform(-1.45, 1.45), _rng.uniform(-1.45, 1.45)
+        r = math.hypot(x, y)
+        for lo, hi, label in bands:
+            if lo < r < hi:
+                pts.append((round(x, 3), round(y, 3), label))
+    return pts
+
+circle_points = _ring_points([(0, 0.7, 1), (0.95, 1.45, 0)])
+rings_points = _ring_points([(0, 0.4, 1), (0.6, 0.95, 0), (1.15, 1.45, 1)], n=240)
+
+board.set_points("fruit", fruit)
+board.set_points("xor", xor_points)
+board.set_points("net", circle_points)
+board.set_points("net2", xor_points)
+board.set_points("net3", rings_points)
+</script>
+
+<footer class="credits">Python runs in your browser using Pyodide.
+  <div class="footer-tools"><button class="linkish" id="clear-saved" type="button">Clear my saved work on this page</button></div>
+</footer>
+</div>
+<script>
+/* Shared runtime for the "How Machines Learn" lessons.
+   - loads Python (Pyodide) in the browser
+   - turns <script type="text/x-python" data-cell> blocks into editable, runnable cells
+   - gives lessons a small canvas plotting helper (Plot)
+   Each lesson adds its own functions to Course.board; Python sees them as `import board`. */
+(function () {
+  "use strict";
+
+  const PYODIDE_VERSION = "314.0.7";
+  const PYODIDE_BASE = window.PYODIDE_BASE || `https://cdn.jsdelivr.net/npm/pyodide@${PYODIDE_VERSION}/`;
+
+  const Course = (window.Course = {
+    board: {},
+    hooks: {},
+    py: null,
+    lessonId: document.documentElement.dataset.lesson || "lesson",
+    reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    extraSavedKeys: [], // lesson-specific storage keys cleared by "Clear my saved work"
+  });
+
+  /* Teacher mode: open any lesson with ?teacher (or #teacher) to get solution buttons.
+     It stays on for the rest of the browser tab. */
+  Course.teacher = (() => {
+    // a page built as a solutions page (data-teacher="1") is always in teacher mode
+    if (document.documentElement.dataset.teacher === "1") return true;
+    let on = false;
+    try {
+      const p = new URLSearchParams(location.search);
+      if (p.has("teacher") || location.hash === "#teacher") sessionStorage.setItem("aicourse:teacher", "1");
+      if (p.get("teacher") === "0") sessionStorage.removeItem("aicourse:teacher");
+      on = sessionStorage.getItem("aicourse:teacher") === "1";
+    } catch (e) {
+      on = /[?&]teacher|#teacher/.test(location.href);
+    }
+    return on;
+  })();
+
+  /* ---------- small helpers ---------- */
+  Course.$ = (sel, root = document) => root.querySelector(sel);
+  Course.$$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+  Course.fmt = (n, d = 2) => (Number.isFinite(n) ? Number(n).toFixed(d) : "–");
+  Course.clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  Course.sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  Course.nextFrame = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
+
+  // The page accent colour (lessons can set their own with --accent)
+  const cssVar = (name, fallback) => {
+    try {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+    } catch (e) {
+      return fallback;
+    }
+  };
+  const cssAccent = () => {
+    try {
+      return getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#3f3bd9";
+    } catch (e) {
+      return "#3f3bd9";
+    }
+  };
+
+  Course.store = {
+    get(key, fallback) {
+      try {
+        const v = localStorage.getItem("aicourse:" + key);
+        return v === null ? fallback : JSON.parse(v);
+      } catch (e) {
+        return fallback;
+      }
+    },
+    set(key, value) {
+      try {
+        localStorage.setItem("aicourse:" + key, JSON.stringify(value));
+      } catch (e) {
+        /* storage unavailable: carry on without saving */
+      }
+    },
+    remove(key) {
+      try {
+        localStorage.removeItem("aicourse:" + key);
+      } catch (e) {}
+    },
+  };
+
+  /* Convert anything Python hands to JavaScript into plain JS values. */
+  Course.toJS = function (v) {
+    if (v && typeof v.toJs === "function") {
+      return v.toJs({ dict_converter: Object.fromEntries, create_pyproxies: false });
+    }
+    return v;
+  };
+
+  /* ---------- Python loading ---------- */
+  const statusEl = () => Course.$(".py-status");
+  function setStatus(state, text) {
+    const el = statusEl();
+    if (!el) return;
+    el.dataset.state = state;
+    el.textContent = text;
+  }
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error("Could not download Python from " + src));
+      document.head.appendChild(s);
+    });
+  }
+
+  let currentOut = null;
+  function writeOut(text, cls) {
+    const out = currentOut;
+    if (!out) {
+      console.log(text);
+      return;
+    }
+    if (cls) {
+      const span = document.createElement("span");
+      span.className = cls;
+      span.textContent = text;
+      out.appendChild(span);
+    } else {
+      const last = out.lastChild;
+      if (last && last.nodeType === 3) last.appendData(text);
+      else out.appendChild(document.createTextNode(text));
+    }
+    if (out.textContent.length > 120000) {
+      out.textContent = "… (older output removed)\n" + out.textContent.slice(-60000);
+    }
+    out.scrollTop = out.scrollHeight;
+  }
+
+  /* Helpers available to every task checker (see data-check scripts). */
+  Course.board._check = () => {};
+  const CHECK_HELPERS = `
+def check(label, ok, hint=""):
+    import board as _board
+    _board._check(str(label), bool(ok), str(hint))
+
+def defined(*names):
+    g = globals()
+    return all(n in g for n in names)
+
+def close(a, b, tol=0.01):
+    try:
+        return abs(float(a) - float(b)) <= tol * max(1.0, abs(float(b)))
+    except Exception:
+        return False
+`;
+
+  Course.ready = (async () => {
+    setStatus("loading", "Loading Python…");
+    await new Promise((r) => (document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", r) : r()));
+    await loadScript(PYODIDE_BASE + "pyodide.js");
+    const py = await window.loadPyodide({ indexURL: PYODIDE_BASE });
+    py.setStdout({ batched: (s) => writeOut(s + "\n") });
+    py.setStderr({ batched: (s) => writeOut(s + "\n", "err") });
+    py.registerJsModule("board", Course.board);
+    await py.runPythonAsync(CHECK_HELPERS);
+    const setup = document.getElementById("py-setup");
+    if (Course.hooks.beforeSetup) await Course.hooks.beforeSetup(py);
+    if (setup) await py.runPythonAsync(setup.textContent);
+    Course.py = py;
+    setStatus("ready", "Python ready");
+    return py;
+  })();
+  Course.ready.catch((e) => {
+    console.error(e);
+    setStatus("error", "Python didn't load");
+  });
+
+  /* ---------- Python syntax highlighting ---------- */
+  const KW = new Set(
+    "False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield".split(" ")
+  );
+  const BUILTIN = new Set(
+    "print range len sum min max abs round int float str list dict set tuple enumerate zip sorted reversed isinstance type map filter any all bool".split(" ")
+  );
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const TOKEN = /(#[^\n]*)|([rbfRBF]{0,2}(?:"""[\s\S]*?(?:"""|$)|'''[\s\S]*?(?:'''|$)|"(?:\\.|[^"\\\n])*"?|'(?:\\.|[^'\\\n])*'?))|(\b\d+(?:\.\d+)?(?:e[+-]?\d+)?\b)|([A-Za-z_]\w*)/g;
+  function highlight(code) {
+    let out = "";
+    let last = 0;
+    let m;
+    TOKEN.lastIndex = 0;
+    while ((m = TOKEN.exec(code))) {
+      out += esc(code.slice(last, m.index));
+      if (m[1]) out += `<span class="t-com">${esc(m[1])}</span>`;
+      else if (m[2]) out += `<span class="t-str">${esc(m[2])}</span>`;
+      else if (m[3]) out += `<span class="t-num">${esc(m[3])}</span>`;
+      else {
+        const w = m[4];
+        if (KW.has(w)) out += `<span class="t-kw">${w}</span>`;
+        else if (BUILTIN.has(w)) out += `<span class="t-bi">${w}</span>`;
+        else if (code[TOKEN.lastIndex] === "(") out += `<span class="t-fn">${w}</span>`;
+        else out += w;
+      }
+      last = TOKEN.lastIndex;
+    }
+    return out + esc(code.slice(last)) + "\n";
+  }
+
+  /* ---------- code cells ---------- */
+  const cells = new Map();
+  const checkers = new Map(); // cell id -> { code, labels }
+  const solutions = new Map(); // cell id -> code
+  let queue = Promise.resolve();
+
+  function cleanError(msg) {
+    const lines = String(msg).split("\n");
+    const i = lines.findIndex((l) => /File "<(exec|cell)>"/.test(l));
+    if (i > 0) return "Traceback (most recent call last):\n" + lines.slice(i).join("\n").trim();
+    return String(msg).trim();
+  }
+
+  /* A plain-English line under the most common Python errors. */
+  function friendlyError(msg) {
+    const last = String(msg).trim().split("\n").pop() || "";
+    const name = (last.match(/name '([^']+)' is not defined/) || [])[1];
+    if (/IndentationError|TabError/.test(last))
+      return "The spaces at the start of a line are wrong. Lines inside a for, if or def need 4 more spaces than the line above.";
+    if (/SyntaxError/.test(last)) {
+      if (/was never closed|unexpected EOF|'\(' was never closed/.test(last)) return "A bracket or quote was opened but never closed.";
+      if (/expected ':'/.test(last)) return "Lines starting with for, if, while, def or else must end with a colon :";
+      return "Python couldn't read this line. Look for a missing bracket, colon, comma or quote near the line shown.";
+    }
+    if (name) return `Python doesn't know the name "${name}". Check the spelling (capitals matter), or run the cell above first.`;
+    if (/ZeroDivisionError/.test(last)) return "Something was divided by zero. Is a list empty?";
+    if (/IndexError/.test(last)) return "You asked for a position that isn't in the list. Lists start at position 0.";
+    if (/KeyError/.test(last)) return "That key isn't in the dictionary.";
+    if (/TypeError/.test(last) && /str/.test(last) && /int|float/.test(last))
+      return "You mixed text and numbers. Use int() or float() to turn text into a number, or str() for the other way.";
+    if (/TypeError/.test(last)) return "A value is the wrong type for what you're doing with it. Check what each variable holds.";
+    if (/ValueError/.test(last)) return "A value has the right type but the wrong content.";
+    if (/AttributeError/.test(last)) return "That object doesn't have this method or property. Check the spelling.";
+    return "";
+  }
+
+  function insertText(ta, text) {
+    ta.focus();
+    if (!document.execCommand || !document.execCommand("insertText", false, text)) {
+      ta.setRangeText(text, ta.selectionStart, ta.selectionEnd, "end");
+      ta.dispatchEvent(new Event("input"));
+    }
+  }
+
+  /* ----- task checks: progress is remembered per lesson ----- */
+  const passedKey = `checks:${Course.lessonId}`;
+  const passed = Course.store.get(passedKey, {}) || {};
+  const checkKey = (cellId, label) => cellId + "::" + label;
+
+  function updateProgress() {
+    let total = 0;
+    let done = 0;
+    checkers.forEach((c, id) =>
+      c.labels.forEach((l) => {
+        total += 1;
+        if (passed[checkKey(id, l)]) done += 1;
+      })
+    );
+    let pill = Course.$(".progress-pill");
+    if (!total) return;
+    if (!pill) {
+      const head = Course.$(".lesson-head");
+      if (!head) return;
+      pill = document.createElement("span");
+      pill.className = "progress-pill";
+      pill.setAttribute("role", "status");
+      const status = Course.$(".py-status");
+      const box = document.createElement("div");
+      box.className = "head-pills";
+      if (status) {
+        status.replaceWith(box);
+        box.appendChild(pill);
+        box.appendChild(status);
+      } else head.appendChild(pill);
+    }
+    pill.textContent = `Tasks done: ${done} / ${total}`;
+    pill.dataset.complete = done === total ? "yes" : "no";
+  }
+
+  function renderChecks(cell, latest) {
+    const chk = checkers.get(cell.id);
+    if (!chk) return;
+    let box = cell.el.querySelector(".checks");
+    if (!box) {
+      box = document.createElement("ul");
+      box.className = "checks";
+      box.setAttribute("aria-label", "Your tasks for this cell");
+      cell.el.appendChild(box);
+    }
+    box.innerHTML = "";
+    chk.labels.forEach((label) => {
+      const ok = !!passed[checkKey(cell.id, label)];
+      const li = document.createElement("li");
+      li.className = ok ? "done" : "todo";
+      const mark = document.createElement("span");
+      mark.className = "mark";
+      mark.textContent = ok ? "✓" : "";
+      const text = document.createElement("span");
+      text.className = "label";
+      text.textContent = label;
+      li.append(mark, text);
+      const r = latest && latest.find((x) => x.label === label);
+      if (!ok && r && r.hint) {
+        const h = document.createElement("span");
+        h.className = "check-hint";
+        h.textContent = r.hint;
+        li.appendChild(h);
+      }
+      box.appendChild(li);
+    });
+  }
+
+  async function runChecks(cell, py) {
+    const chk = checkers.get(cell.id);
+    if (!chk) return;
+    const results = [];
+    Course.board._check = (label, ok, hint) => results.push({ label: String(label), ok: !!ok, hint: String(hint || "") });
+    py.globals.set("_output", cell.out.textContent);
+    const prev = currentOut;
+    currentOut = null;
+    try {
+      await py.runPythonAsync(chk.code, { filename: "<check>" });
+    } catch (e) {
+      console.warn("checker failed", e);
+    } finally {
+      currentOut = prev;
+    }
+    results.forEach((r) => {
+      if (r.ok) passed[checkKey(cell.id, r.label)] = true;
+    });
+    Course.store.set(passedKey, passed);
+    renderChecks(cell, results);
+    updateProgress();
+    return results;
+  }
+
+  function makeCell(script) {
+    const id = script.dataset.cell;
+    const original = script.textContent.replace(/^\n+/, "").replace(/\s+$/, "") + "\n";
+    const saveKey = `code:${Course.lessonId}:${id}`;
+    const baseKey = saveKey + ":base";
+    // A short fingerprint of the starter code, so saved work from an older
+    // version of the page is not shown in place of new instructions.
+    let h = 5381;
+    for (let i = 0; i < original.length; i++) h = ((h * 33) ^ original.charCodeAt(i)) >>> 0;
+    const baseHash = h.toString(36);
+    let saved = Course.store.get(saveKey, null);
+    let oldCode = null;
+    if (saved !== null && saved !== original && Course.store.get(baseKey, null) !== baseHash) {
+      oldCode = saved;          // saved against an older version of this cell
+      saved = null;
+    }
+
+    const wrap = document.createElement("div");
+    wrap.className = "cell";
+    wrap.id = "cell-" + id;
+    wrap.innerHTML = `
+      <div class="cell-bar">
+        <span class="cell-title"></span>
+        <span class="hint">Shift + Enter</span>
+        <button class="btn solution" type="button" hidden>Solution</button>
+        <button class="btn reset" type="button" title="Put the original code back">Reset</button>
+        <button class="btn run" type="button">Run</button>
+      </div>
+      <div class="editor">
+        <div class="gutter" aria-hidden="true"></div>
+        <div class="code-scroll"><div class="code-inner"><pre aria-hidden="true"></pre><textarea wrap="off" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Python code"></textarea></div></div>
+      </div>
+      <p class="cell-note" hidden>This cell has new instructions since you last worked on it, so it shows the new version. <button class="linkish old-code" type="button">Show my old code</button></p>
+      <pre class="out" aria-live="polite"></pre>`;
+    wrap.querySelector(".cell-title").textContent = script.dataset.title || "Python";
+    const ta = wrap.querySelector("textarea");
+    const pre = wrap.querySelector(".code-inner pre");
+    const gutter = wrap.querySelector(".gutter");
+    const out = wrap.querySelector(".out");
+    ta.value = saved !== null ? saved : original;
+
+    let lineCount = 0;
+    const render = () => {
+      pre.innerHTML = highlight(ta.value);
+      const n = ta.value.split("\n").length;
+      if (n !== lineCount) {
+        lineCount = n;
+        gutter.textContent = Array.from({ length: n }, (_, i) => i + 1).join("\n");
+      }
+    };
+    let saveTimer = null;
+    ta.addEventListener("input", () => {
+      render();
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => { Course.store.set(saveKey, ta.value); Course.store.set(baseKey, baseHash); }, 400);
+    });
+    render();
+
+    // keep the caret in view when a long line scrolls sideways
+    const scroller = wrap.querySelector(".code-scroll");
+    const followCaret = () => {
+      const before = ta.value.slice(0, ta.selectionStart);
+      const col = before.length - before.lastIndexOf("\n") - 1;
+      const x = 16 + col * 8.43; // approx. width of one character at 14px
+      if (x > scroller.scrollLeft + scroller.clientWidth - 24) scroller.scrollLeft = x - scroller.clientWidth + 48;
+      else if (x < scroller.scrollLeft + 16) scroller.scrollLeft = Math.max(0, x - 48);
+    };
+    ta.addEventListener("keyup", followCaret);
+    ta.addEventListener("click", followCaret);
+
+    ta.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (e.shiftKey || e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        cell.run();
+        return;
+      }
+      if (e.key === "Escape") {
+        ta.blur();
+        return;
+      }
+      if (e.key === "Tab") {
+        e.preventDefault();
+        const { selectionStart: s, selectionEnd: en, value } = ta;
+        if (s !== en && value.slice(s, en).includes("\n")) {
+          // indent / dedent the selected lines
+          const lineStart = value.lastIndexOf("\n", s - 1) + 1;
+          const block = value.slice(lineStart, en);
+          const changed = e.shiftKey ? block.replace(/^ {1,4}/gm, "") : block.replace(/^/gm, "    ");
+          ta.setSelectionRange(lineStart, en);
+          insertText(ta, changed);
+          ta.setSelectionRange(lineStart, lineStart + changed.length);
+        } else if (e.shiftKey) {
+          const lineStart = value.lastIndexOf("\n", s - 1) + 1;
+          const lead = value.slice(lineStart).match(/^ {1,4}/);
+          if (lead) {
+            ta.setSelectionRange(lineStart, lineStart + lead[0].length);
+            insertText(ta, "");
+          }
+        } else {
+          insertText(ta, "    ");
+        }
+        return;
+      }
+      if (e.key === "Enter") {
+        const { selectionStart: s, value } = ta;
+        const lineStart = value.lastIndexOf("\n", s - 1) + 1;
+        const line = value.slice(lineStart, s);
+        let indent = line.match(/^ */)[0];
+        if (/:\s*(#.*)?$/.test(line)) indent += "    ";
+        e.preventDefault();
+        insertText(ta, "\n" + indent);
+      }
+    });
+
+    const setCode = (code) => {
+      ta.value = code;
+      render();
+      Course.store.set(saveKey, code);
+      Course.store.set(baseKey, baseHash);
+    };
+    if (oldCode !== null) {
+      const note = wrap.querySelector(".cell-note");
+      note.hidden = false;
+      note.querySelector(".old-code").addEventListener("click", () => {
+        setCode(oldCode);
+        note.hidden = true;
+      });
+    }
+
+    wrap.querySelector(".run").addEventListener("click", () => cell.run());
+    wrap.querySelector(".reset").addEventListener("click", () => {
+      if (ta.value !== original && !confirm("Put the original code back? Your changes in this cell will be lost.")) return;
+      setCode(original);
+      Course.store.remove(saveKey);
+      Course.store.remove(baseKey);
+      out.textContent = "";
+    });
+    const solBtn = wrap.querySelector(".solution");
+    solBtn.addEventListener("click", () => {
+      const sol = solutions.get(id);
+      if (!sol) return;
+      if (ta.value !== original && ta.value !== sol && !confirm("Replace the code in this cell with the solution?")) return;
+      setCode(sol);
+    });
+
+    const cell = {
+      id,
+      el: wrap,
+      textarea: ta,
+      out,
+      needs: (script.dataset.needs || "").split(/[\s,]+/).filter(Boolean),
+      ranOK: false,
+      original,
+      run: () => runCell(cell, false),
+      setCode,
+      get code() {
+        return ta.value;
+      },
+    };
+    cells.set(id, cell);
+    script.replaceWith(wrap);
+    return cell;
+  }
+
+  function runCell(cell, quiet) {
+    const p = queue.then(() => execute(cell, quiet));
+    queue = p.catch(() => {});
+    return p;
+  }
+
+  async function execute(cell, quiet) {
+    // run any cells this one depends on that haven't been run yet
+    for (const dep of cell.needs) {
+      const c = cells.get(dep);
+      if (c && !c.ranOK) {
+        const ok = await execute(c, true);
+        if (!ok) {
+          cell.out.textContent = "";
+          writeTo(cell.out, `The cell "${c.el.querySelector(".cell-title").textContent}" above has an error. Fix it first.\n`, "err");
+          return false;
+        }
+      }
+    }
+    cell.el.classList.add("running");
+    Course.busy = true;
+    cell.out.textContent = "";
+    let py;
+    try {
+      if (!Course.py) writeTo(cell.out, "Waiting for Python to load…\n", "info");
+      py = await Course.ready;
+      cell.out.textContent = "";
+    } catch (e) {
+      cell.out.textContent = "";
+      writeTo(cell.out, "Python couldn't load, so code can't run. Check the internet connection and reload the page.\n", "err");
+      cell.el.classList.remove("running");
+      Course.busy = false;
+      return false;
+    }
+    if (quiet) writeTo(cell.out, "(run automatically because a cell below needed it)\n", "info");
+    await Course.nextFrame();
+    currentOut = cell.out;
+    let ok = true;
+    try {
+      if (Course.hooks.beforeRun) await Course.hooks.beforeRun(py, cell.id);
+      const result = await py.runPythonAsync(cell.code, { filename: "<cell>" });
+      if (result !== undefined && result !== null && !(result instanceof Promise)) {
+        let text;
+        if (typeof result === "object" && typeof result.toString === "function" && result.type !== undefined) {
+          text = py.globals.get("repr")(result);
+          if (result.destroy) result.destroy();
+        } else text = String(result);
+        writeOut(text + "\n");
+      }
+    } catch (e) {
+      ok = false;
+      writeOut(cleanError(e.message) + "\n", "err");
+      const help = friendlyError(e.message);
+      if (help) writeOut("→ " + help + "\n", "err-help");
+    } finally {
+      currentOut = null;
+      cell.el.classList.remove("running");
+      Course.busy = false;
+      cell.ranOK = ok;
+      if (Course.hooks.afterRun) {
+        try {
+          Course.hooks.afterRun(py, cell.id, ok);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+    if (ok && checkers.has(cell.id)) await runChecks(cell, py);
+    return ok;
+  }
+
+  function writeTo(out, text, cls) {
+    const prev = currentOut;
+    currentOut = out;
+    writeOut(text, cls);
+    currentOut = prev;
+  }
+
+  Course.cells = cells;
+  Course.solutions = solutions;
+  Course.checkers = checkers;
+  Course.passed = passed;
+  Course.runCell = (id) => runCell(cells.get(id), false);
+
+  function initCells() {
+    Course.$$('script[type="text/x-python"][data-solution]').forEach((sc) => {
+      solutions.set(sc.dataset.solution, sc.textContent.replace(/^\n+/, "").replace(/\s+$/, "") + "\n");
+      sc.remove();
+    });
+    Course.$$('script[type="text/x-python"][data-check]').forEach((sc) => {
+      const code = sc.textContent;
+      const labels = [];
+      code.replace(/check\(\s*(["'])((?:(?!\1).)+)\1/g, (_, q, label) => {
+        if (!labels.includes(label)) labels.push(label);
+      });
+      checkers.set(sc.dataset.check, { code, labels });
+      sc.remove();
+    });
+    Course.$$('script[type="text/x-python"][data-cell]').forEach(makeCell);
+    cells.forEach((cell) => {
+      renderChecks(cell, null);
+      if (Course.teacher && solutions.has(cell.id)) cell.el.querySelector(".solution").hidden = false;
+    });
+    updateProgress();
+    initQuizzes();
+    initPageTools();
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initCells);
+  else initCells();
+
+  /* ---------- end-of-lesson quiz ----------
+     <div class="quiz-q" data-answer="2"><p>Question</p><ol><li>…</li></ol><p class="why">…</p></div>
+     data-answer counts from 1. */
+  function initQuizzes() {
+    Course.$$(".quiz-q").forEach((q, qi) => {
+      const answer = Number(q.dataset.answer) - 1;
+      const list = q.querySelector("ol");
+      const why = q.querySelector(".why");
+      if (!list) return;
+      if (why) why.hidden = true;
+      const opts = document.createElement("div");
+      opts.className = "quiz-opts";
+      opts.setAttribute("role", "group");
+      Array.from(list.children).forEach((li, i) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "quiz-opt";
+        b.innerHTML = li.innerHTML;
+        b.addEventListener("click", () => {
+          if (q.dataset.done) return;
+          if (i === answer) {
+            b.classList.add("right");
+            q.dataset.done = "1";
+            if (why) why.hidden = false;
+            opts.querySelectorAll("button").forEach((x) => (x.disabled = x !== b));
+          } else {
+            b.classList.add("wrong");
+            b.disabled = true;
+          }
+        });
+        opts.appendChild(b);
+      });
+      list.replaceWith(opts);
+      const num = document.createElement("span");
+      num.className = "quiz-num";
+      num.textContent = qi + 1;
+      q.prepend(num);
+    });
+  }
+
+  /* ---------- teacher banner and "clear my saved work" ---------- */
+  Course.clearSaved = function () {
+    try {
+      const prefixes = [`aicourse:code:${Course.lessonId}:`, `aicourse:checks:${Course.lessonId}`];
+      const extra = Course.extraSavedKeys.map((k) => "aicourse:" + k);
+      const doomed = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (prefixes.some((p) => k.startsWith(p)) || extra.includes(k)) doomed.push(k);
+      }
+      doomed.forEach((k) => localStorage.removeItem(k));
+    } catch (e) {}
+  };
+  function initPageTools() {
+    const clear = Course.$("#clear-saved");
+    if (clear)
+      clear.addEventListener("click", () => {
+        if (!confirm("Clear everything saved on this page on this laptop (your code, ticks and answers)?")) return;
+        Course.clearSaved();
+        location.reload();
+      });
+    if (Course.teacher) {
+      document.body.classList.add("teacher-mode");
+      const bar = document.createElement("div");
+      bar.className = "teacher-bar";
+      bar.innerHTML = '<span><b>Teacher mode.</b> Each code cell has a Solution button.</span>' +
+        '<button class="btn small" type="button" data-act="solve-all">Load all solutions</button>' +
+        '<button class="btn small" type="button" data-act="exit">Leave teacher mode</button>';
+      bar.querySelector('[data-act="solve-all"]').addEventListener("click", () => {
+        if (!confirm("Replace the code in every cell with its solution?")) return;
+        cells.forEach((c) => solutions.has(c.id) && c.setCode(solutions.get(c.id)));
+      });
+      bar.querySelector('[data-act="exit"]').addEventListener("click", () => {
+        try {
+          sessionStorage.removeItem("aicourse:teacher");
+        } catch (e) {}
+        location.href = location.pathname;
+      });
+      document.body.prepend(bar);
+    }
+  }
+
+  /* ---------- Plot: a small canvas chart helper ---------- */
+  function niceStep(span, count) {
+    const raw = span / count;
+    const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+    const n = raw / pow;
+    return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * pow;
+  }
+
+  class Plot {
+    constructor(canvas, opts = {}) {
+      this.canvas = canvas;
+      this.ctx = canvas.getContext("2d");
+      this.o = Object.assign(
+        { xmin: 0, xmax: 1, ymin: 0, ymax: 1, aspect: 0.62, pad: { l: 56, r: 18, t: 16, b: 44 }, xlabel: "", ylabel: "", axes: true, gridLines: true, square: false },
+        opts
+      );
+      this.onRender = null;
+      this.resize();
+      new ResizeObserver(() => {
+        this.resize();
+        if (this.onRender) this.onRender();
+      }).observe(canvas);
+    }
+    resize() {
+      const dpr = window.devicePixelRatio || 1;
+      const w = this.canvas.clientWidth || 600;
+      const h = this.o.height || Math.round(w * this.o.aspect);
+      this.w = w;
+      this.h = h;
+      this.canvas.style.height = h + "px";
+      if (this.canvas.width !== Math.round(w * dpr) || this.canvas.height !== Math.round(h * dpr)) {
+        this.canvas.width = Math.round(w * dpr);
+        this.canvas.height = Math.round(h * dpr);
+      }
+      this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    setRange(r) {
+      Object.assign(this.o, r);
+    }
+    get plotW() {
+      return this.w - this.o.pad.l - this.o.pad.r;
+    }
+    get plotH() {
+      return this.h - this.o.pad.t - this.o.pad.b;
+    }
+    X(x) {
+      return this.o.pad.l + ((x - this.o.xmin) / (this.o.xmax - this.o.xmin)) * this.plotW;
+    }
+    Y(y) {
+      return this.o.pad.t + (1 - (y - this.o.ymin) / (this.o.ymax - this.o.ymin)) * this.plotH;
+    }
+    invX(px) {
+      return this.o.xmin + ((px - this.o.pad.l) / this.plotW) * (this.o.xmax - this.o.xmin);
+    }
+    invY(py) {
+      return this.o.ymin + (1 - (py - this.o.pad.t) / this.plotH) * (this.o.ymax - this.o.ymin);
+    }
+    eventPos(e) {
+      const r = this.canvas.getBoundingClientRect();
+      return { px: e.clientX - r.left, py: e.clientY - r.top };
+    }
+    clear() {
+      const c = this.ctx;
+      c.clearRect(0, 0, this.w, this.h);
+      c.fillStyle = cssVar("--card", "#ffffff");
+      c.fillRect(0, 0, this.w, this.h);
+      if (this.o.axes) this.drawAxes();
+    }
+    drawAxes() {
+      const c = this.ctx;
+      const o = this.o;
+      const { l, t } = o.pad;
+      c.save();
+      c.font = "12px " + getComputedStyle(document.body).fontFamily;
+      c.fillStyle = cssVar("--muted", "#5b6680");
+      c.strokeStyle = cssVar("--plot-grid", "#e6ebf3");
+      c.lineWidth = 1;
+      const xs = niceStep(o.xmax - o.xmin, Math.max(3, this.plotW / 80));
+      const ys = niceStep(o.ymax - o.ymin, Math.max(3, this.plotH / 50));
+      const dec = (s) => Math.max(0, -Math.floor(Math.log10(s) + 1e-9));
+      const tick = (v, d) => { const t = v.toFixed(d); return /^-0(\.0*)?$/.test(t) ? t.slice(1) : t; };
+      c.textAlign = "center";
+      c.textBaseline = "top";
+      for (let x = Math.ceil(o.xmin / xs) * xs; x <= o.xmax + 1e-9; x += xs) {
+        const px = Math.round(this.X(x)) + 0.5;
+        if (o.gridLines) {
+          c.beginPath();
+          c.moveTo(px, t);
+          c.lineTo(px, t + this.plotH);
+          c.stroke();
+        }
+        c.fillText(tick(x, dec(xs)), px, t + this.plotH + 6);
+      }
+      c.textAlign = "right";
+      c.textBaseline = "middle";
+      for (let y = Math.ceil(o.ymin / ys) * ys; y <= o.ymax + 1e-9; y += ys) {
+        const py = Math.round(this.Y(y)) + 0.5;
+        if (o.gridLines) {
+          c.beginPath();
+          c.moveTo(l, py);
+          c.lineTo(l + this.plotW, py);
+          c.stroke();
+        }
+        c.fillText(tick(y, dec(ys)), l - 8, py);
+      }
+      c.strokeStyle = cssVar("--plot-axis", "#8a95ad");
+      c.strokeRect(l + 0.5, t + 0.5, this.plotW, this.plotH);
+      c.fillStyle = cssVar("--ink", "#18213a");
+      c.font = "13px " + getComputedStyle(document.body).fontFamily;
+      if (o.xlabel) {
+        c.textAlign = "center";
+        c.textBaseline = "bottom";
+        c.fillText(o.xlabel, l + this.plotW / 2, this.h - 2);
+      }
+      if (o.ylabel) {
+        c.save();
+        c.translate(14, t + this.plotH / 2);
+        c.rotate(-Math.PI / 2);
+        c.textAlign = "center";
+        c.textBaseline = "middle";
+        c.fillText(o.ylabel, 0, 0);
+        c.restore();
+      }
+      c.restore();
+    }
+    clip(fn) {
+      const c = this.ctx;
+      c.save();
+      c.beginPath();
+      c.rect(this.o.pad.l, this.o.pad.t, this.plotW, this.plotH);
+      c.clip();
+      fn(c);
+      c.restore();
+    }
+    dot(x, y, { r = 5, fill = "#18213a", stroke = null, lw = 1.5 } = {}) {
+      const c = this.ctx;
+      c.beginPath();
+      c.arc(this.X(x), this.Y(y), r, 0, Math.PI * 2);
+      if (fill) {
+        c.fillStyle = fill;
+        c.fill();
+      }
+      if (stroke) {
+        c.strokeStyle = stroke;
+        c.lineWidth = lw;
+        c.stroke();
+      }
+    }
+    segment(x1, y1, x2, y2, { color = cssAccent(), lw = 2, dash = null } = {}) {
+      this.clip((c) => {
+        c.strokeStyle = color;
+        c.lineWidth = lw;
+        if (dash) c.setLineDash(dash);
+        c.beginPath();
+        c.moveTo(this.X(x1), this.Y(y1));
+        c.lineTo(this.X(x2), this.Y(y2));
+        c.stroke();
+      });
+    }
+    polyline(pts, { color = cssAccent(), lw = 2, dash = null } = {}) {
+      if (!pts.length) return;
+      this.clip((c) => {
+        c.strokeStyle = color;
+        c.lineWidth = lw;
+        c.lineJoin = "round";
+        if (dash) c.setLineDash(dash);
+        c.beginPath();
+        pts.forEach(([x, y], i) => (i ? c.lineTo(this.X(x), this.Y(y)) : c.moveTo(this.X(x), this.Y(y))));
+        c.stroke();
+      });
+    }
+    fn(f, opts = {}) {
+      const pts = [];
+      const n = Math.max(80, Math.round(this.plotW / 3));
+      for (let i = 0; i <= n; i++) {
+        const x = this.o.xmin + ((this.o.xmax - this.o.xmin) * i) / n;
+        pts.push([x, f(x)]);
+      }
+      this.polyline(pts, opts);
+    }
+    label(x, y, text, { color = "#18213a", align = "left", base = "bottom", size = 13, bold = false, dx = 0, dy = 0 } = {}) {
+      const c = this.ctx;
+      c.save();
+      c.font = `${bold ? "700 " : ""}${size}px ` + getComputedStyle(document.body).fontFamily;
+      c.fillStyle = color;
+      c.textAlign = align;
+      c.textBaseline = base;
+      c.fillText(text, this.X(x) + dx, this.Y(y) + dy);
+      c.restore();
+    }
+    heat(values, colorFn) {
+      // values: rows from top (ymax) to bottom (ymin), columns from xmin to xmax
+      const rows = values.length;
+      const cols = values[0].length;
+      const cw = this.plotW / cols;
+      const ch = this.plotH / rows;
+      const c = this.ctx;
+      for (let i = 0; i < rows; i++)
+        for (let j = 0; j < cols; j++) {
+          c.fillStyle = colorFn(values[i][j]);
+          c.fillRect(this.o.pad.l + j * cw, this.o.pad.t + i * ch, cw + 0.6, ch + 0.6);
+        }
+    }
+  }
+  Course.Plot = Plot;
+
+  /* Simple tween helper for animations; finishes instantly with reduced motion. */
+  Course.tween = function (ms, step) {
+    if (Course.reducedMotion || ms <= 0) {
+      step(1);
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      const t0 = performance.now();
+      function frame(now) {
+        const t = Math.min(1, (now - t0) / ms);
+        step(t);
+        if (t < 1) requestAnimationFrame(frame);
+        else resolve();
+      }
+      requestAnimationFrame(frame);
+    });
+  };
+
+  /* Class data shared by Lessons 1 and 2 (same website = same saved data). */
+  Course.exampleClassData = [
+    [152, 150], [155, 157], [158, 155], [160, 163], [161, 158], [163, 166], [164, 162], [165, 169],
+    [167, 165], [168, 171], [169, 167], [170, 174], [171, 170], [172, 169], [173, 177], [175, 173],
+    [176, 180], [177, 175], [178, 182], [180, 178], [181, 185], [183, 181], [185, 189], [188, 186],
+  ];
+  Course.getClassData = function () {
+    const d = Course.store.get("classData", null);
+    if (Array.isArray(d) && d.length >= 2) return d;
+    return Course.exampleClassData.map((r) => r.slice());
+  };
+})();
+
+</script>
+<script>
+(function () {
+  "use strict";
+  const { $, fmt, clamp } = Course;
+  const INK = "#17212a";
+  const ACCENT = "#0f7a5f";
+  const RED = "#c8323b";
+  const YELLOW = "#f2c230";
+  const GREEN = "#0f7a5f";
+  const MUTED = "#56616a";
+  const font = () => getComputedStyle(document.body).fontFamily;
+  const num = (v) => {
+    const r = Math.round(v * 10) / 10;
+    return r < 0 ? "−" + Math.abs(r).toFixed(1) : Math.abs(r).toFixed(1); // proper minus sign, no "−0.0"
+  };
+
+  /* ================= 1. The beach neuron ================= */
+  const names = ["Sunny", "Warm", "Friends going"];
+  const FRIEND = [
+    [[0, 0, 0], 0], [[1, 0, 0], 0], [[0, 1, 0], 0], [[0, 0, 1], 0],
+    [[1, 1, 0], 1], [[1, 0, 1], 0], [[0, 1, 1], 1], [[1, 1, 1], 1],
+  ];
+  const np = new Course.Plot($("#neuron-plot"), { xmin: 0, xmax: 10, ymin: 0, ymax: 6, aspect: 0.6, axes: false, pad: { l: 0, r: 0, t: 0, b: 0 } });
+  const weights = () => [0, 1, 2].map((i) => Number($(`#w-${i}`).value));
+  const bias = () => Number($("#bias").value);
+  const inputs = () => [0, 1, 2].map((i) => ($(`#in-${i}`).checked ? 1 : 0));
+  const totalOf = (x, w, b) => x.reduce((a, xi, i) => a + xi * w[i], b);
+  const decide = (x, w, b) => (totalOf(x, w, b) > 1e-9 ? 1 : 0);
+  const inPos = [4.9, 3, 1.1];
+
+  function renderNeuron() {
+    const c = np.ctx;
+    const w = weights();
+    const b = bias();
+    const x = inputs();
+    const total = totalOf(x, w, b);
+    // phones: a taller diagram with smaller circles so the labels fit
+    const narrow = np.w < 520;
+    const aspect = narrow ? 0.85 : 0.6;
+    if (np.o.aspect !== aspect) {
+      np.o.aspect = aspect;
+      np.resize();
+    }
+    const rIn = narrow ? 17 : 22;
+    const rN = narrow ? 34 : 46;
+    np.clear();
+    const nx = 6.2;
+    const ny = 3;
+    // connections
+    x.forEach((xi, i) => {
+      const lw = 1 + Math.min(Math.abs(w[i]), 5) * 1.6;
+      const col = w[i] >= 0 ? ACCENT : RED;
+      c.save();
+      c.globalAlpha = xi ? 1 : 0.3;
+      np.segment(2.2, inPos[i], nx, ny, { color: col, lw });
+      c.restore();
+      const mx = 2.2 + (nx - 2.2) * 0.45;
+      const my = inPos[i] + (ny - inPos[i]) * 0.45;
+      np.label(mx, my, "× " + num(w[i]), { color: col, bold: true, dy: -8, align: "center", size: 14 });
+    });
+    // inputs
+    x.forEach((xi, i) => {
+      np.dot(1.6, inPos[i], { r: rIn, fill: xi ? INK : "#fff", stroke: INK, lw: 2 });
+      np.label(1.6, inPos[i], String(xi), { color: xi ? "#fff" : INK, align: "center", base: "middle", bold: true, size: 18 });
+      np.label(1.6, inPos[i], names[i], { align: "center", base: "top", dy: rIn + 4, size: narrow ? 12 : 13, color: MUTED });
+    });
+    // neuron
+    const out = total > 1e-9;
+    np.dot(nx, ny, { r: rN, fill: "#dcefe8", stroke: ACCENT, lw: 3 });
+    np.label(nx, ny, "total", { align: "center", base: "bottom", dy: -4, size: 13, color: MUTED });
+    np.label(nx, ny, num(total), { align: "center", base: "top", dy: 0, size: 22, bold: true });
+    np.label(nx, ny, `bias ${num(b)}`, { align: "center", base: "top", dy: rN + 6, size: 13, color: MUTED });
+    // output
+    np.segment(np.invX(np.X(nx) + rN), ny, 8.0, ny, { color: INK, lw: 2 });
+    c.save();
+    c.fillStyle = out ? GREEN : "#93a6a2";
+    const bx = np.X(8.05);
+    const bw = np.X(9.9) - bx;
+    c.beginPath();
+    c.roundRect(bx, np.Y(ny) - 30, bw, 60, 10);
+    c.fill();
+    c.fillStyle = "#fff";
+    c.font = `700 ${narrow ? 13 : 17}px ${font()}`;
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+    c.fillText(out ? "Beach!" : narrow ? "Home" : "Stay home", bx + bw / 2, np.Y(ny) - 8);
+    c.font = `${narrow ? 11 : 13}px ${font()}`;
+    c.fillText(out ? "total > 0" : "total ≤ 0", bx + bw / 2, np.Y(ny) + 14);
+    c.restore();
+    renderSum(x, w, b, total);
+  }
+  np.onRender = renderNeuron;
+
+  // the arithmetic, written out: 1 × 2.0 + 0 × 0.0 + 1 × 1.0 − 0.5 = 2.5
+  function renderSum(x, w, b, total) {
+    const terms = x.map((xi, i) => `${xi} × ${w[i] < 0 ? "(" + num(w[i]) + ")" : num(w[i])}`).join(" + ");
+    const biasPart = b < 0 ? ` − ${Math.abs(b).toFixed(1)}` : ` + ${b.toFixed(1)}`;
+    const fires = total > 1e-9;
+    const el = $("#sum-line");
+    el.innerHTML = "";
+    const calc = document.createElement("span");
+    calc.className = "calc";
+    calc.textContent = `total = ${terms}${biasPart} = ${num(total)}`;
+    const verdict = document.createElement("span");
+    verdict.className = "verdict";
+    verdict.innerHTML = fires
+      ? `${num(total)} is above 0, so the neuron <b class="yes">fires</b>: beach.`
+      : `${num(total)} is not above 0, so the neuron <b>does not fire</b>: stay home.`;
+    el.append(calc, verdict);
+  }
+
+  let wasAll = false;
+  function renderDays() {
+    const w = weights();
+    const b = bias();
+    const tb = $("#days-table tbody");
+    let score = 0;
+    tb.innerHTML = "";
+    FRIEND.forEach(([x, went], i) => {
+      const guess = decide(x, w, b);
+      const ok = guess === went;
+      score += ok;
+      const yn = (v) => (v ? "yes" : "no");
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${i + 1}</td><td>${yn(x[0])}</td><td>${yn(x[1])}</td><td>${yn(x[2])}</td>
+        <td>${went ? "beach" : "home"}</td><td>${guess ? "beach" : "home"}</td>
+        <td class="${ok ? "ok" : "no"}">${ok ? "match" : "wrong"}</td>`;
+      tb.appendChild(tr);
+    });
+    const box = $("#days-score");
+    const all = score === 8;
+    box.innerHTML = all
+      ? "<b>8 / 8 days match.</b> Your neuron decides exactly like your friend. Now try it in Python below."
+      : `<b>${score} / 8</b> days match.`;
+    if (all && !wasAll) {
+      box.classList.remove("all");
+      void box.offsetWidth; // restart the pop animation
+    }
+    box.classList.toggle("all", all);
+    wasAll = all;
+  }
+
+  function syncOutputs() {
+    [0, 1, 2].forEach((i) => ($(`#w-${i}-out`).textContent = num(Number($(`#w-${i}`).value))));
+    $("#bias-out").textContent = num(Number($("#bias").value));
+    renderNeuron();
+    renderDays();
+  }
+  ["#w-0", "#w-1", "#w-2", "#bias", "#in-0", "#in-1", "#in-2"].forEach((s) => $(s).addEventListener("input", syncOutputs));
+
+  np.canvas.addEventListener("pointerdown", (e) => {
+    const { px, py } = np.eventPos(e);
+    inPos.forEach((y, i) => {
+      if (Math.hypot(px - np.X(1.6), py - np.Y(y)) < 26) {
+        const box = $(`#in-${i}`);
+        box.checked = !box.checked;
+        syncOutputs();
+      }
+    });
+  });
+  np.canvas.addEventListener("pointermove", (e) => {
+    const { px, py } = np.eventPos(e);
+    np.canvas.style.cursor = inPos.some((y) => Math.hypot(px - np.X(1.6), py - np.Y(y)) < 26) ? "pointer" : "default";
+  });
+
+  Course.board.set_neuron = (w, b) => {
+    const ws = Course.toJS(w).map(Number);
+    ws.slice(0, 3).forEach((v, i) => ($(`#w-${i}`).value = clamp(v, -5, 5)));
+    $("#bias").value = clamp(Number(b), -5, 5);
+    syncOutputs();
+  };
+
+  /* ================= Boundary plots: gates, fruit, XOR ================= */
+  const boards = {};
+  // a colour faded towards white (opaque, so neighbouring heat-map cells don't show seams)
+  function tint(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    const f = (v) => Math.round(255 + (v - 255) * a);
+    return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`;
+  }
+  function makeBoundaryPlot(name, canvas, opts, colors, extra = {}) {
+    const plot = new Course.Plot(canvas, Object.assign({ aspect: 0.72 }, opts));
+    const state = Object.assign({ plot, points: [], w: null, colors, r: 5.5 }, extra);
+    plot.onRender = () => renderBoundary(state);
+    boards[name] = state;
+    renderBoundary(state);
+    return state;
+  }
+  function renderBoundary(s) {
+    const { plot, colors } = s;
+    plot.clear();
+    if (s.w) {
+      const [w1, w2, b] = s.w;
+      const rows = 48;
+      const cols = 64;
+      const grid = [];
+      for (let i = 0; i < rows; i++) {
+        const y = plot.o.ymax - ((i + 0.5) / rows) * (plot.o.ymax - plot.o.ymin);
+        const row = [];
+        for (let j = 0; j < cols; j++) {
+          const x = plot.o.xmin + ((j + 0.5) / cols) * (plot.o.xmax - plot.o.xmin);
+          row.push(w1 * x + w2 * y + b > 0 ? 1 : 0);
+        }
+        grid.push(row);
+      }
+      plot.heat(grid, (v) => tint(v ? colors[1] : colors[0], 0.18));
+      if (plot.o.axes) plot.drawAxes();
+      if (Math.abs(w2) > 1e-9) plot.fn((x) => -(w1 * x + b) / w2, { color: INK, lw: 2.5 });
+      else if (Math.abs(w1) > 1e-9) plot.segment(-b / w1, plot.o.ymin, -b / w1, plot.o.ymax, { color: INK, lw: 2.5 });
+    }
+    if (s.decorate) s.decorate(s);
+    s.points.forEach(([x, y, l]) => {
+      plot.dot(x, y, { r: s.r, fill: l ? colors[1] : colors[0], stroke: INK, lw: 1.2 });
+      if (s.numbers) plot.label(x, y, String(l), { align: "center", base: "middle", bold: true, size: 14, color: l ? "#fff" : INK });
+    });
+    if (!s.points.length) plot.label((plot.o.xmin + plot.o.xmax) / 2, (plot.o.ymin + plot.o.ymax) / 2, "Waiting for Python…", { align: "center", base: "middle", color: "#93a6a2" });
+    if (s.after) s.after(s);
+  }
+
+  /* ----- logic gates: four corners, labelled 0 / 1 ----- */
+  const GATES = {
+    AND: [[0, 0, 0], [0, 1, 0], [1, 0, 0], [1, 1, 1]],
+    OR: [[0, 0, 0], [0, 1, 1], [1, 0, 1], [1, 1, 1]],
+    XOR: [[0, 0, 0], [0, 1, 1], [1, 0, 1], [1, 1, 0]],
+  };
+  function gateFrame(s) {
+    const p = s.plot;
+    const c = p.ctx;
+    c.save();
+    c.strokeStyle = "#93a6a2";
+    c.lineWidth = 1;
+    c.strokeRect(p.o.pad.l + 0.5, p.o.pad.t + 0.5, p.plotW, p.plotH);
+    c.restore();
+    [0, 1].forEach((v) => {
+      p.label(v, p.o.ymin, String(v), { align: "center", base: "top", dy: 6, color: MUTED, size: 12 });
+      p.label(p.o.xmin, v, String(v), { align: "right", base: "middle", dx: -6, color: MUTED, size: 12 });
+    });
+    p.label((p.o.xmin + p.o.xmax) / 2, p.o.ymin, "a", { align: "center", base: "top", dy: 20, size: 13, bold: true });
+    p.label(p.o.xmin, (p.o.ymin + p.o.ymax) / 2, "b", { align: "right", base: "middle", dx: -20, size: 13, bold: true });
+  }
+  Object.keys(GATES).forEach((g) => {
+    const s = makeBoundaryPlot(
+      "gate-" + g,
+      $(`#gate-${g}-plot`),
+      { xmin: -0.5, xmax: 1.5, ymin: -0.5, ymax: 1.5, aspect: 1, axes: false, pad: { l: 40, r: 8, t: 8, b: 40 } },
+      [YELLOW, ACCENT],
+      { r: 13, numbers: true, after: gateFrame }
+    );
+    s.points = GATES[g];
+    renderBoundary(s);
+  });
+  Course.board.show_gate = (name, w, b) => {
+    const key = String(name).toUpperCase();
+    const s = boards["gate-" + key];
+    if (!s) return;
+    const ws = Course.toJS(w).map(Number);
+    const bb = Number(b);
+    s.w = [ws[0] || 0, ws[1] || 0, bb];
+    renderBoundary(s);
+    const right = GATES[key].filter(([a, c, want]) => (a * s.w[0] + c * s.w[1] + bb > 1e-9 ? 1 : 0) === want).length;
+    const cap = $(`#gate-${key}-cap`);
+    cap.textContent = right === 4 ? "4 / 4 rows right. One line does it." : `${right} / 4 rows right.`;
+    cap.className = "gate-cap" + (right === 4 ? " ok" : "");
+  };
+  Course.board.show_search = (isXor, tried, found) => {
+    if (!isXor) return;
+    const cap = $("#gate-XOR-cap");
+    cap.textContent = Number(found) === 0 ? `No line works: 0 of ${tried} tried.` : `${found} of ${tried} settings work.`;
+    cap.className = "gate-cap" + (Number(found) === 0 ? " bad" : " ok");
+  };
+
+  /* ----- apples and lemons, with the mystery fruit ----- */
+  const MYSTERY = [1.6, 0.3];
+  function drawMystery(s) {
+    const p = s.plot;
+    p.dot(MYSTERY[0], MYSTERY[1], { r: 10, fill: "#fff", stroke: INK, lw: 2 });
+    p.label(MYSTERY[0], MYSTERY[1], "?", { align: "center", base: "middle", bold: true, size: 14 });
+  }
+  makeBoundaryPlot("fruit", $("#fruit-plot"), { xmin: 0.5, xmax: 2.4, ymin: 0, ymax: 1, xlabel: "Weight (hundreds of grams)", ylabel: "Sourness" }, [YELLOW, RED], { after: drawMystery });
+  makeBoundaryPlot("xor", $("#xor-plot"), { xmin: -1.5, xmax: 1.5, ymin: -1.5, ymax: 1.5, xlabel: "x1", ylabel: "x2" }, [YELLOW, ACCENT]);
+
+  Course.board.show_boundary = (name, w1, w2, b, epoch, mistakes) => {
+    const s = boards[name];
+    if (!s) return;
+    s.w = [Number(w1), Number(w2), Number(b)];
+    renderBoundary(s);
+    const ep = $(`#${name}-epoch`);
+    const mi = $(`#${name}-mistakes`);
+    if (!ep || !mi) return;
+    ep.textContent = epoch;
+    mi.textContent = mistakes;
+    mi.parentElement.className = "readout " + (Number(mistakes) === 0 ? "good" : "score");
+  };
+
+  /* ================= Networks: decision map, hidden lines, loss ================= */
+  const nets = {};
+  function mix(v) {
+    // 0 -> yellow, 1 -> green
+    const a = [242, 194, 48];
+    const b = [15, 122, 95];
+    const t = clamp(v, 0, 1);
+    const ch = (i) => Math.round(255 + (a[i] + (b[i] - a[i]) * t - 255) * 0.35);
+    return `rgb(${ch(0)},${ch(1)},${ch(2)})`;
+  }
+  function netOutput(n, x, y) {
+    let total = n.b2;
+    for (let j = 0; j < n.W1.length; j++) total += n.W2[j] * Math.tanh(n.W1[j][0] * x + n.W1[j][1] * y + n.b1[j]);
+    return 1 / (1 + Math.exp(-total));
+  }
+  function makeNet(name) {
+    const map = new Course.Plot($(`#${name}-plot`), { xmin: -1.5, xmax: 1.5, ymin: -1.5, ymax: 1.5, aspect: 1, xlabel: "x1", ylabel: "x2" });
+    const loss = new Course.Plot($(`#${name}-loss`), { xmin: 0, xmax: 300, ymin: 0, ymax: 0.3, aspect: 1, xlabel: "Round", ylabel: "How wrong (loss)" });
+    const s = { map, loss, points: [], net: null, losses: [] };
+    map.onRender = () => renderNetMap(s);
+    loss.onRender = () => renderNetLoss(s);
+    nets[name] = s;
+    return s;
+  }
+  function renderNetMap(s) {
+    const p = s.map;
+    p.clear();
+    if (s.net) {
+      const N = 60;
+      const grid = [];
+      for (let i = 0; i < N; i++) {
+        const y = p.o.ymax - ((i + 0.5) / N) * (p.o.ymax - p.o.ymin);
+        const row = [];
+        for (let j = 0; j < N; j++) row.push(netOutput(s.net, p.o.xmin + ((j + 0.5) / N) * (p.o.xmax - p.o.xmin), y));
+        grid.push(row);
+      }
+      p.heat(grid, mix);
+      p.drawAxes();
+      // each hidden neuron's own line: where its weighted sum is 0
+      s.net.W1.forEach(([w1, w2], j) => {
+        const b = s.net.b1[j];
+        const opts = { color: "rgba(23,33,42,0.8)", lw: 1.6, dash: [6, 5] };
+        if (Math.abs(w2) > Math.abs(w1) && Math.abs(w2) > 1e-9) p.fn((x) => -(w1 * x + b) / w2, opts);
+        else if (Math.abs(w1) > 1e-9) p.segment(-(w2 * p.o.ymin + b) / w1, p.o.ymin, -(w2 * p.o.ymax + b) / w1, p.o.ymax, opts);
+      });
+    }
+    s.points.forEach(([x, y, l]) => p.dot(x, y, { r: 4.5, fill: l ? ACCENT : YELLOW, stroke: INK, lw: 1 }));
+    if (!s.points.length) p.label(0, 0, "Waiting for Python…", { align: "center", base: "middle", color: "#93a6a2" });
+  }
+  function renderNetLoss(s) {
+    const p = s.loss;
+    const ls = s.losses;
+    if (ls.length) p.setRange({ xmax: Math.max(10, ls.length - 1), ymax: Math.max(0.05, Math.max(...ls) * 1.1) });
+    p.clear();
+    p.polyline(ls.map((v, i) => [i, v]), { color: RED, lw: 2.5 });
+    if (ls.length) p.label(p.o.xmax, p.o.ymax, `round ${ls.length - 1}: ${fmt(ls[ls.length - 1], 3)}`, { align: "right", base: "top", dx: -10, dy: 8, bold: true, color: RED });
+    else p.label((p.o.xmin + p.o.xmax) / 2, (p.o.ymin + p.o.ymax) / 2, "Run the cell to train", { align: "center", base: "middle", color: "#93a6a2" });
+  }
+  makeNet("net");
+  makeNet("net2");
+  makeNet("net3");
+
+  Course.board.set_points = (name, pts) => {
+    const p = Course.toJS(pts).map((r) => r.map(Number));
+    if (nets[name]) {
+      const s = nets[name];
+      s.points = p;
+      s.net = null;
+      s.losses = [];
+      renderNetMap(s);
+      renderNetLoss(s);
+    } else if (boards[name]) {
+      boards[name].points = p;
+      boards[name].w = null;
+      renderBoundary(boards[name]);
+    }
+  };
+  Course.board.show_network = (name, W1, b1, W2, b2, ls) => {
+    const s = nets[name];
+    if (!s) return;
+    s.net = {
+      W1: Course.toJS(W1).map((r) => r.map(Number)),
+      b1: Course.toJS(b1).map(Number),
+      W2: Course.toJS(W2).map(Number),
+      b2: Number(b2),
+    };
+    s.losses = Course.toJS(ls).map(Number);
+    renderNetMap(s);
+    renderNetLoss(s);
+  };
+
+  syncOutputs();
+  Object.values(nets).forEach((s) => {
+    renderNetMap(s);
+    renderNetLoss(s);
+  });
+})();
+
+</script>
+</body>
+</html>
