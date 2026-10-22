@@ -450,6 +450,22 @@ details.codes { margin-top: 12px; font-size: 0.9rem; }
 details.codes summary { cursor: pointer; color: var(--muted); }
 details.codes textarea { width: 100%; box-sizing: border-box; font: 0.75rem/1.3 var(--mono); padding: 6px; border: 1px solid var(--line); border-radius: 6px; resize: vertical; }
 details.codes .row { display: flex; gap: 8px; margin: 4px 0 10px; flex-wrap: wrap; }
+/* Teach an AI our handwriting: guess + scoreboard */
+.predict { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 12px; }
+.predict-k { font-weight: 700; margin-right: 4px; }
+.predict .btn[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+.scoreboard { overflow-x: auto; }
+table.score { border-collapse: collapse; font-variant-numeric: tabular-nums; min-width: 420px; }
+table.score th, table.score td { padding: 4px 10px; text-align: center; border-bottom: 1px solid var(--grid); }
+table.score thead th { font-family: var(--display); font-size: 0.95rem; vertical-align: bottom; }
+table.score thead th.win { color: var(--accent); }
+table.score td.pic canvas { width: 30px; height: 30px; image-rendering: pixelated; border: 1px solid var(--grid); vertical-align: middle; }
+table.score td.ok { color: var(--green); font-weight: 700; }
+table.score td.no { color: #fff; background: #e3767b; font-weight: 700; }
+table.score tfoot td, table.score tfoot th { font-weight: 700; border-bottom: 0; }
+table.score tfoot tr:first-child td, table.score tfoot tr:first-child th { border-top: 2px solid var(--ink); }
+.verdict { margin: 10px 0 0; font-size: 1.05rem; }
+.verdict b { color: var(--accent); }
 </style>
 
 <dl class="keywords">
@@ -463,7 +479,7 @@ details.codes .row { display: flex; gap: 8px; margin: 4px 0 10px; flex-wrap: wra
 
 <section class="activity starter" id="warmup">
   <h2>Warm-up: lend us your handwriting</h2>
-  <p class="task">Draw each digit from 0 to 9 the way you normally write it, then send them. Everyone's digits become <b>our class dataset</b>, and later you'll train a network on it.</p>
+  <p class="task">Draw each digit from 0 to 9 the way you normally write it, then send them. Everyone's digits become <b>our class dataset</b>, and in activity 2 you'll train an AI on it.</p>
   <div class="panel pad-row">
     <div>
       <canvas class="drawpad" id="pad-0" width="280" height="280" aria-label="Drawing area for the warm-up digits"></canvas>
@@ -556,6 +572,55 @@ for picture in mystery:
 
 code = "1958"    # the year Frank Rosenblatt built the perceptron, the first learning neuron
 </script>
+</section>
+
+<section class="activity">
+  <h2>Teach an AI our handwriting</h2>
+  <p class="task">Which reads <b>your</b> 10 digits better: an AI trained on your classmates' handwriting, or one trained on 1,500 digits written by strangers in the 1990s? Make your guess, then train all three and find out.</p>
+  <div class="panel">
+    <div class="predict" id="predict" role="group" aria-label="Your guess">
+      <span class="predict-k">My guess: the one that reads me best is trained on</span>
+      <button class="btn small" type="button" data-guess="0" aria-pressed="false">our class</button>
+      <button class="btn small" type="button" data-guess="1" aria-pressed="false">the 1990s</button>
+      <button class="btn small" type="button" data-guess="2" aria-pressed="false">both together</button>
+    </div>
+    <div class="scoreboard" id="scoreboard"><p class="note">Run the code below to fill the scoreboard.</p></div>
+  </div>
+<script type="text/x-python" data-cell="ourclass" data-title="Train on our class">
+# class_images, class_labels: everyone's warm-up digits. class_mine: True for each of your own.
+# my_images, my_labels: the 10 digits you drew in the warm-up.
+# train_new_network(...) trains a network and gives back its guess function.
+# (In activity 5 you'll open one up and see exactly how it learns.)
+if not class_ready:
+    print("The class dataset isn't here yet. Wait for your teacher, or press")
+    print('"No class data? Use a practice class" in the warm-up, then run this again.')
+else:
+    # never train on your own digits: they are the test
+    rest_images = [img for img, mine in zip(class_images, class_mine) if not mine]
+    rest_labels = [lab for lab, mine in zip(class_labels, class_mine) if not mine]
+    print(f"Our class: {len(class_images)} digits from {class_students} students")
+
+    print("Training on our class...")
+    ours = await train_new_network(rest_images, rest_labels, rounds=10)
+    print("Training on the 1990s...")
+    nineties = await train_new_network(train_images, train_labels, rounds=3)
+    print("Training on both...")
+    both = await train_new_network(train_images + rest_images, train_labels + rest_labels, rounds=3)
+
+    models = [ours, nineties, both]
+    board.show_scoreboard(my_images, my_labels,
+                          [[guess(img) for img in my_images] for guess in models],
+                          [score(guess, test_images, test_labels) for guess in models])
+
+    # the class's digits that the 1990s network reads wrongly
+    misread = [(img, f"{lab}, read as {nineties(img)}") for img, lab in zip(class_images, class_labels)
+               if nineties(img) != lab]
+    print(f"The 1990s network gets {len(misread)} of our class's {len(class_images)} digits wrong (below).")
+    board.show_gallery([img for img, c in misread], [c for img, c in misread], "class")
+
+# Try: is there a digit that every network gets wrong? Is that your handwriting, or the AI?
+</script>
+  <div class="panel"><canvas class="gallery" id="class-gallery" data-empty="Run the code above to see the class digits the 1990s network misreads." aria-label="Class digits the 1990s network got wrong"></canvas></div>
 </section>
 
 <section class="activity">
@@ -775,7 +840,7 @@ print(f"Your neuron: {right} / {tested} hidden 8s and 3s right ({detector_score:
 
 <section class="activity">
   <h2>Train a neural network</h2>
-  <p class="task">64 inputs, a hidden layer of 16 neurons, 10 outputs (one per digit). Nobody paints its weights: it learns them from one image at a time, with the same <b>guess, check, nudge</b> loop.</p>
+  <p class="task">Time to open up the kind of network you trained in activity 2: 64 inputs, 16 hidden neurons, 10 outputs (one per digit). Nobody paints its weights: it learns them one image at a time, with the same <b>guess, check, nudge</b> loop.</p>
 <script type="text/x-python" data-cell="network" data-title="The network">
 import math, random
 
@@ -854,43 +919,6 @@ board.show_weights(W1, captions)
     <p class="note">16 neurons the network painted for itself. Compare them with yours. Under each one: the digit it votes for most.</p>
   </div>
 </section>
-
-
-<section class="activity">
-  <h2>Our class's handwriting</h2>
-  <p class="task">Your warm-up digits are now a dataset. Can the network you trained on 1990s handwriting read <b>ours</b>? Can a network trained on the rest of the class read <b>yours</b>?</p>
-<script type="text/x-python" data-cell="ourclass" data-title="Train on our class" data-needs="train">
-# class_images, class_labels: everyone's warm-up digits. class_mine: True for each of your own.
-# my_images, my_labels: the 10 digits you drew in the warm-up.
-if not class_ready:
-    print("The class dataset isn't here yet. When your teacher shares it, run this cell again.")
-else:
-    print(f"Our class: {len(class_images)} pictures from {class_students} students")
-
-    # 1. The network from activity 4 learned from 1990s handwriting. How well does it read ours?
-    print(f"1990s network on our class's digits: {score(network_guess, class_images, class_labels):.0f}%")
-    misread = [(img, f"{lab}, read as {network_guess(img)}") for img, lab in zip(class_images, class_labels)
-               if network_guess(img) != lab]
-    board.show_gallery([img for img, c in misread], [c for img, c in misread], "class")
-
-    # 2. A new network, trained only on the rest of the class (not on you)
-    rest_images = [img for img, mine in zip(class_images, class_mine) if not mine]
-    rest_labels = [lab for lab, mine in zip(class_labels, class_mine) if not mine]
-    ours = await train_new_network(rest_images, rest_labels, rounds=10)
-    print(f"Trained on the rest of the class: {score(ours, test_images, test_labels):.0f}% of the 1990s test digits")
-    if my_images:
-        print(f"   and {score(ours, my_images, my_labels):.0f}% of your own digits")
-
-    # 3. Both together: the 1990s digits and the rest of the class
-    both = await train_new_network(train_images + rest_images, train_labels + rest_labels, rounds=3)
-    if my_images:
-        print(f"Trained on both: {score(both, my_images, my_labels):.0f}% of your own digits")
-
-# Try: which of your digits does it get wrong? Would a person read them correctly?
-</script>
-  <div class="panel"><canvas class="gallery" id="class-gallery" data-empty="Run the code above to see the class digits the 1990s network misreads." aria-label="Class digits the 1990s network got wrong"></canvas></div>
-</section>
-
 <section class="activity">
   <h2>Fool it with four squares</h2>
   <p class="task">The trained network is over 99% sure what this digit is. Change <b>at most 4 squares</b> so it reads something else while a person (and nearest neighbour) still reads the same digit: you will have made an <b>adversarial example</b>.</p>
@@ -3003,7 +3031,7 @@ def best_bias(fire, quiet):
     return best
 
 async def train_new_network(images, labels, rounds=3, hidden_size=16, learning_rate=0.05):
-    """A fresh network like the one in activity 4, trained on these pictures.
+    """A fresh network like the one in activity 5, trained on these pictures.
     Returns its guess function. Your own network is not changed."""
     rng = random.Random(1)
     V1 = [[rng.uniform(-0.3, 0.3) for _ in range(64)] for _ in range(hidden_size)]
@@ -4262,12 +4290,15 @@ def close(a, b, tol=0.01):
     classData = { pictures: data.pictures, labels: data.labels, owners: data.owners, students: data.students || new Set(data.owners).size };
     Course.store.set("lesson4:classdata", classData);
     if (pollTimer) clearInterval(pollTimer);
-    setStatus(`The class dataset is ready: ${classData.pictures.length} pictures from ${classData.students} students${how ? " (" + how + ")" : ""}. You'll use it in activity 5.`, true);
+    setStatus(`The class dataset is ready: ${classData.pictures.length} pictures from ${classData.students} students${how ? " (" + how + ")" : ""}. You'll use it in activity 2.`, true);
     return true;
   }
 
+  // The class server: the server this page came from, or one named in the link: ?class=https://….
+  const CLASS_PARAM = new URLSearchParams(location.search).get("class");
+  const API_BASE = CLASS_PARAM ? CLASS_PARAM.replace(/\/*$/, "/") : "";
   async function api(path, opts) {
-    const r = await fetch(path, { cache: "no-store", ...opts });
+    const r = await fetch(API_BASE + path, { cache: "no-store", ...opts });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j.error || `The class server said ${r.status}.`);
     return j;
@@ -4401,8 +4432,10 @@ def close(a, b, tol=0.01):
     } catch (e) {
       /* no built-in data */
     }
-    if (window.CLASS_SERVER) {
-      // only pages served by the classroom server (classroom/server.py) look for it
+    if (CLASS_PARAM && location.protocol === "https:" && /^http:/i.test(API_BASE)) {
+      setStatus("This page is on https, so it can't reach an http class server. Open the address your teacher wrote on the board instead.");
+    } else if (window.CLASS_SERVER || CLASS_PARAM) {
+      // only pages served by the classroom server (classroom/server.py), or given ?class=, look for it
       try {
         const st = await api("api/status");
         online = !!st.server;
@@ -4420,6 +4453,57 @@ def close(a, b, tol=0.01):
     }
     renderHw();
   })();
+
+
+  /* ---------- Teach an AI our handwriting: your guess and the scoreboard ---------- */
+  const MODEL_NAMES = ["Our class", "The 1990s", "Both"];
+  Course.extraSavedKeys.push("lesson4:predict");
+  let prediction = Course.store.get("lesson4:predict", null);
+  let lastBoard = null;
+  Course.$$("#predict [data-guess]").forEach((btn) => {
+    btn.setAttribute("aria-pressed", String(Number(btn.dataset.guess) === prediction));
+    btn.addEventListener("click", () => {
+      prediction = Number(btn.dataset.guess);
+      Course.store.set("lesson4:predict", prediction);
+      Course.$$("#predict [data-guess]").forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
+      if (lastBoard) renderScoreboard(lastBoard);
+    });
+  });
+  function renderScoreboard(d) {
+    const box = $("#scoreboard");
+    const n = d.labels.length;
+    const right = d.guesses.map((g) => g.reduce((k, v, i) => k + (v === d.labels[i]), 0));
+    const best = Math.max(...right);
+    const winners = MODEL_NAMES.map((_, m) => m).filter((m) => n && right[m] === best);
+    let html = '<table class="score"><thead><tr><th>You drew</th><th></th>' +
+      MODEL_NAMES.map((name, m) => `<th class="${winners.includes(m) ? "win" : ""}">Trained on<br>${name.toLowerCase()}</th>`).join("") + "</tr></thead><tbody>";
+    d.labels.forEach((lab, i) => {
+      html += `<tr><th>${lab}</th><td class="pic"><canvas width="8" height="8" data-i="${i}"></canvas></td>` +
+        d.guesses.map((g) => (g[i] === lab ? `<td class="ok">${g[i]} ✓</td>` : `<td class="no">${g[i]}</td>`)).join("") + "</tr>";
+    });
+    html += "</tbody><tfoot>";
+    if (n) html += "<tr><th colspan=\"2\">Your digits</th>" + right.map((k) => `<td>${k} / ${n}</td>`).join("") + "</tr>";
+    html += '<tr><th colspan="2">1990s test digits</th>' + d.test.map((v) => `<td>${Math.round(v)}%</td>`).join("") + "</tr></tfoot></table>";
+    let verdict = "";
+    if (!n) verdict = "Draw your 10 digits in the warm-up and run the code again to see which network reads <i>you</i> best.";
+    else {
+      const names = winners.map((m) => MODEL_NAMES[m].toLowerCase());
+      verdict = `Best at reading you: <b>${names.join(" and ")}</b> (${best} of ${n}).`;
+      if (prediction !== null) verdict += winners.includes(prediction) ? " Your guess was right." : ` You guessed ${MODEL_NAMES[prediction].toLowerCase()}.`;
+      else verdict += " (You didn't make a guess.)";
+    }
+    box.innerHTML = html + `<p class="verdict">${verdict}</p>`;
+    box.querySelectorAll("canvas[data-i]").forEach((cv) => drawTiny(cv, d.images[Number(cv.dataset.i)]));
+  }
+  Course.board.show_scoreboard = (images, labels, guesses, test) => {
+    lastBoard = {
+      images: Course.toJS(images).map((p) => Array.from(p, Number)),
+      labels: Array.from(Course.toJS(labels), Number),
+      guesses: Course.toJS(guesses).map((g) => Array.from(g, Number)),
+      test: Array.from(Course.toJS(test), Number),
+    };
+    renderScoreboard(lastBoard);
+  };
 
   /* ---------- an 8 × 8 grid of buttons ---------- */
   function makeGrid(box, onCell, { drag = false } = {}) {
@@ -4685,7 +4769,7 @@ def close(a, b, tol=0.01):
       } else {
         $("#guess-knn").textContent = "–";
         drawTiny($("#knn-match"), null);
-        msgs.push('Run "Nearest neighbour" (activity 2) for its guess.');
+        msgs.push('Run "Nearest neighbour" (activity 3) for its guess.');
       }
     } catch (e) {
       msgs.push("Couldn't guess: " + String(e.message).split("\n").slice(-2).join(" "));
